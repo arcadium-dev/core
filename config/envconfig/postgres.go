@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "arcadium.dev/core/config"
+package envconfig // import "arcadium.dev/core/config/envconfig
 
 import (
 	"fmt"

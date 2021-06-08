@@ -15,16 +15,10 @@
 # limitations under the License.
 
 source "$(dirname $0)/common.sh"
-source "$(dirname $0)/artifacts.sh"
-source "$(dirname $0)/db.sh"
 
 declare CI=""
 CI="$(basename $0)"
 declare -r CI
-
-declare -ar infra_services=(
-  "postgres"
-)
 
 
 #----------------------------------------------------------------------------
@@ -95,9 +89,14 @@ ci_test_lint() {
 
 
 ci_test_unit() {
+  local target="./..."
+  if [[ "${1:-}" != "" ]]; then
+    target="$1"
+  fi
+
   info "Unit Testing"
   # FIXME
-  if ! docker-compose run --rm ginkgo -cover --randomizeSuites -keepGoing -progress ${1:--r} | grep -Ev "(^go: downloading|^[[:space:]]*$)"; then
+  if ! docker-compose run --rm go test -cover "${target}" | grep -Ev "(^go: downloading|^[[:space:]]*$)"; then
     failed
   fi
   success
