@@ -18,7 +18,7 @@ jobs:
       with:
         go-version: 1.16
 
-    - nane: Build
+    - name: Build
       run: go build ./...
 
     - name: Test
