@@ -1,0 +1,176 @@
+#!/bin/bash
+#
+# Copyright 2020-21 Ian Cahoon <icahoon@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+source "$(dirname $0)/common.sh"
+
+declare CI=""
+CI="$(basename $0)"
+declare -r CI
+
+
+#----------------------------------------------------------------------------
+# Build
+
+
+ci_build() {
+  local command="${1:-all}"
+  shift || true
+  if ! cmd_check "ci_build_${command}"; then
+    ci_help
+    failed
+  fi
+  "ci_build_${command}" "$@"
+}
+
+
+ci_build_all() {
+  ci_build_mocks
+}
+
+
+ci_build_tools() {
+  info "Pulling tools containers"
+  if ! docker-compose pull go; then
+    failed
+  fi
+  success
+}
+
+
+ci_build_mocks() {
+  info "Generating mocks"
+  if ! docker-compose run --rm go generate -x ./... | grep -Ev "(^go: downloading|^[[:space:]]*$|^# get)"; then
+    failed
+  fi
+  success
+}
+
+
+#----------------------------------------------------------------------------
+# Test
+
+
+ci_test() {
+  local command="${1:-all}"
+  if ! cmd_check "ci_test_${command}"; then
+    ci_help
+    failed
+  fi
+  if [[ $# -gt 0 ]]; then
+    shift
+  fi
+  "ci_test_${command}" "$@"
+}
+
+
+ci_test_all() {
+  ci_test_lint
+  ci_test_unit
+}
+
+
+ci_test_lint() {
+  info "Linting"
+  # TODO
+}
+
+
+ci_test_unit() {
+  local target="./..."
+  if [[ "${1:-}" != "" ]]; then
+    target="$1"
+  fi
+
+  info "Unit Testing"
+  # FIXME
+  if ! docker-compose run --rm go test -cover "${target}" | grep -Ev "(^go: downloading|^[[:space:]]*$)"; then
+    failed
+  fi
+  success
+}
+
+
+#----------------------------------------------------------------------------
+# Run
+
+
+ci_run() {
+  if ! docker-compose run --rm --name "$1" "$@"; then
+    failed
+  fi
+  success
+}
+
+
+#----------------------------------------------------------------------------
+# Completion
+
+
+ci_completion() {
+  case "${1:-}" in
+    "build")
+      echo "tools mocks";;
+    "test")
+      echo "lint unit";;
+    "ci")
+      echo "all build test run";;
+  esac
+  exit 0
+}
+
+
+#----------------------------------------------------------------------------
+# Help
+
+ci_help() {
+  cat <<- EOHELP
+	usage: ${CI} command command_options
+
+	  commands:
+	    build
+	    test
+	    run
+
+	EOHELP
+}
+
+
+#----------------------------------------------------------------------------
+# Main
+
+
+ci_all() {
+  ci_build && ci_test
+}
+
+
+main() {
+  if [[ ! -x ./build/ci ]]; then
+    die "Must be in the root directory to run ci."
+  fi
+  local command="${1:-all}"
+  if ! cmd_check "ci_${command}"; then
+    ci_help
+    failed
+  fi
+  shift || true
+  if ! "ci_${command}" "$@"; then
+    failed
+  fi
+}
+
+
+main "$@"
