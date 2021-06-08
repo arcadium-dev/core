@@ -32,9 +32,5 @@ func Open(config Config, opts ...Option) (DB, error) {
 	for _, opt := range opts {
 		opt.apply(o)
 	}
-	if o.logger != nil {
-		db = &loggerDB{DB: db, logger: o.logger}
-	}
-
 	return db, nil
 }

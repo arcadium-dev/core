@@ -20,7 +20,7 @@ import (
 	"context"
 	"database/sql"
 
-	"arcadium.dev/mud/log"
+	"arcadium.dev/core/log"
 )
 
 type Result = sql.Result

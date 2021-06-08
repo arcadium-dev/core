@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package grpc // import "arcadium.dev/ud/server/grpc"
+package grpc // import "arcadium.dev/core/server/grpc"
 
 //go:generate mockgen -package mockgrpc -destination ./mock/server.go . Server
 
@@ -25,9 +25,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 
-	"arcadium.dev/ud/log"
-	"arcadium.dev/ud/server"
-	"arcadium.dev/ud/trace"
+	"arcadium.dev/core/log"
+	"arcadium.dev/core/server"
+	"arcadium.dev/core/trace"
 )
 
 type (
