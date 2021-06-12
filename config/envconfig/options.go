@@ -19,7 +19,7 @@ type (
 		prefix string
 	}
 
-	// Option provides options when colleting configuration information.
+	// Option provides options when collecting configuration information.
 	Option interface {
 		apply(*options)
 	}

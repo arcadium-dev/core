@@ -20,54 +20,57 @@ import (
 	"arcadium.dev/core/config"
 )
 
-func setupSQLDatabase(e config.Env, opts ...Option) (*SQLDatabase, error) {
+func setupSQLDatabase(t *testing.T, e config.Env, opts ...Option) *SQLDatabase {
 	e.Set()
 	defer e.Unset()
-	return NewSQLDatabase(opts...)
-}
 
-func TestSQLDatabaseDefaultDriver(t *testing.T) {
-	cfg, err := setupSQLDatabase(config.Env(nil))
+	cfg, err := NewSQLDatabase(opts...)
 	if err != nil {
 		t.Errorf("error occurred: %s", err)
 	}
+	return cfg
+}
+
+func TestSQLDatabaseDefaultDriver(t *testing.T) {
+	cfg := setupSQLDatabase(t, config.Env(nil))
+
 	if cfg.DriverName() != "postgres" {
 		t.Error("incorrect sql database config for an empty environment")
 	}
 }
 
 func TestSQLDatabaseValidDriver(t *testing.T) {
-	cfg, err := setupSQLDatabase(config.Env(map[string]string{
+	cfg := setupSQLDatabase(t, config.Env(map[string]string{
 		"SQL_DATABASE_DRIVER": "postgres",
 	}))
-	if err != nil {
-		t.Errorf("error occurred: %s", err)
+
+	if cfg.DriverName() != "postgres" {
+		t.Error("incorrect sql database config for a valid environment")
 	}
+}
+
+func TestSQLDatabaseWithPrefix(t *testing.T) {
+	cfg := setupSQLDatabase(t, config.Env(map[string]string{
+		"PLAYERS_DATABASE_DRIVER": "postgres",
+	}), WithPrefix("players"))
+
 	if cfg.DriverName() != "postgres" {
 		t.Error("incorrect sql database config for a valid environment")
 	}
 }
 
 func TestSQLDatabaseUnsupportedDriver(t *testing.T) {
-	cfg, err := setupSQLDatabase(config.Env(map[string]string{
+	e := config.Env(map[string]string{
 		"SQL_DATABASE_DRIVER": "mysql",
-	}))
+	})
+	e.Set()
+	defer e.Unset()
+
+	cfg, err := NewSQLDatabase()
 	if cfg != nil {
-		t.Error("unexpected sql database config")
+		t.Errorf("unexpected sql database config")
 	}
 	if err == nil || err.Error() != "unsupported database driver: mysql" {
 		t.Errorf("error expected")
-	}
-}
-
-func TestSQLDatabaseWithPrefix(t *testing.T) {
-	cfg, err := setupSQLDatabase(config.Env(map[string]string{
-		"PLAYERS_DATABASE_DRIVER": "postgres",
-	}), WithPrefix("players"))
-	if err != nil {
-		t.Errorf("error occurred: %s", err)
-	}
-	if cfg.DriverName() != "postgres" {
-		t.Error("incorrect sql database config for a valid environment")
 	}
 }

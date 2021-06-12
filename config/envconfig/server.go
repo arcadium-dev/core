@@ -59,7 +59,7 @@ func NewServer(opts ...Option) (*Server, error) {
 	}, nil
 }
 
-// Addr returns the network address the server with listen on.
+// Addr returns the network address the server will listen on.
 func (s *Server) Addr() string {
 	return s.addr
 }
@@ -74,7 +74,8 @@ func (s *Server) Key() string {
 	return s.key
 }
 
-// CACert returns the filename of the certificate of the client CA. This is used when a mutual TLS connection is desired.
+// CACert returns the filename of the certificate of the client CA.
+// This is used when a mutual TLS connection is desired.
 func (s *Server) CACert() string {
 	return s.cacert
 }

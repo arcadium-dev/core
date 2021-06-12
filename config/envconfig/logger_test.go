@@ -20,45 +20,44 @@ import (
 	"arcadium.dev/core/config"
 )
 
-func loggerSetup(e config.Env, opts ...Option) (*Logger, error) {
+func loggerSetup(t *testing.T, e config.Env, opts ...Option) *Logger {
 	e.Set()
 	defer e.Unset()
-	return NewLogger(opts...)
-}
 
-func TestLoggerEmptyEnv(t *testing.T) {
-	cfg, err := loggerSetup(config.Env(nil))
+	cfg, err := NewLogger(opts...)
 	if err != nil {
 		t.Errorf("error occurred: %s", err)
 	}
+	return cfg
+}
+
+func TestLoggerEmptyEnv(t *testing.T) {
+	cfg := loggerSetup(t, config.Env(nil))
+
 	if cfg.Level() != "" || cfg.File() != "" || cfg.Format() != "" {
 		t.Error("incorrect logging config for an empty environment")
 	}
 }
 
 func TestLoggerFullEnv(t *testing.T) {
-	cfg, err := loggerSetup(config.Env(map[string]string{
+	cfg := loggerSetup(t, config.Env(map[string]string{
 		"LOG_LEVEL":  "level",
 		"LOG_FILE":   "file",
 		"LOG_FORMAT": "format",
 	}))
-	if err != nil {
-		t.Errorf("error occurred: %s", err)
-	}
+
 	if cfg.Level() != "level" || cfg.File() != "file" || cfg.Format() != "format" {
 		t.Error("incorrect logging config for a full environment")
 	}
 }
 
-func TestLoggerWithPrefux(t *testing.T) {
-	cfg, err := loggerSetup(config.Env(map[string]string{
+func TestLoggerWithPrefix(t *testing.T) {
+	cfg := loggerSetup(t, config.Env(map[string]string{
 		"PREFIX_LOG_LEVEL":  "level",
 		"PREFIX_LOG_FILE":   "file",
 		"PREFIX_LOG_FORMAT": "format",
 	}), WithPrefix("prefix"))
-	if err != nil {
-		t.Errorf("error occurred: %s", err)
-	}
+
 	if cfg.Level() != "level" || cfg.File() != "file" || cfg.Format() != "format" {
 		t.Error("incorrect logging config for a full environment")
 	}

@@ -20,32 +20,33 @@ import (
 	"arcadium.dev/core/config"
 )
 
-func setupServer(e config.Env, opts ...Option) (*Server, error) {
+func setupServer(t *testing.T, e config.Env, opts ...Option) *Server {
 	e.Set()
 	defer e.Unset()
-	return NewServer(opts...)
-}
 
-func TestServerEmptyEnv(t *testing.T) {
-	cfg, err := setupServer(config.Env(nil))
+	cfg, err := NewServer(opts...)
 	if err != nil {
 		t.Errorf("error occurred: %s", err)
 	}
+	return cfg
+}
+
+func TestServerEmptyEnv(t *testing.T) {
+	cfg := setupServer(t, config.Env(nil))
+
 	if cfg.Addr() != "" || cfg.Cert() != "" || cfg.Key() != "" || cfg.CACert() != "" {
 		t.Error("incorrect server config for an empty environment")
 	}
 }
 
 func TestServerFullEnv(t *testing.T) {
-	cfg, err := setupServer(config.Env(map[string]string{
+	cfg := setupServer(t, config.Env(map[string]string{
 		"SERVER_ADDR":   "test_addr:42",
 		"SERVER_CERT":   "/opt/cert.crt",
 		"SERVER_KEY":    "/opt/key.crt",
 		"SERVER_CACERT": "/opt/cacert.crt",
 	}))
-	if err != nil {
-		t.Errorf("error occurred: %s", err)
-	}
+
 	if cfg.Addr() != "test_addr:42" || cfg.Cert() != "/opt/cert.crt" ||
 		cfg.Key() != "/opt/key.crt" || cfg.CACert() != "/opt/cacert.crt" {
 		t.Error("incorrect server config for a full environment")
@@ -53,13 +54,11 @@ func TestServerFullEnv(t *testing.T) {
 }
 
 func TestServerPartialEnv(t *testing.T) {
-	cfg, err := setupServer(config.Env(map[string]string{
+	cfg := setupServer(t, config.Env(map[string]string{
 		"SERVER_CERT": "/opt/cert.crt",
 		"SERVER_KEY":  "/opt/key.crt",
 	}))
-	if err != nil {
-		t.Errorf("error occurred: %s", err)
-	}
+
 	if cfg.Addr() != "" || cfg.Cert() != "/opt/cert.crt" ||
 		cfg.Key() != "/opt/key.crt" || cfg.CACert() != "" {
 		t.Error("incorrect server config for a partial environment")
@@ -67,15 +66,13 @@ func TestServerPartialEnv(t *testing.T) {
 }
 
 func TestServerWithPrefix(t *testing.T) {
-	cfg, err := setupServer(config.Env(map[string]string{
+	cfg := setupServer(t, config.Env(map[string]string{
 		"FANCY_SERVER_ADDR":   "test_addr:42",
 		"FANCY_SERVER_CERT":   "/opt/cert.crt",
 		"FANCY_SERVER_KEY":    "/opt/key.crt",
 		"FANCY_SERVER_CACERT": "/opt/cacert.crt",
 	}), WithPrefix("fancy"))
-	if err != nil {
-		t.Errorf("error occurred: %s", err)
-	}
+
 	if cfg.Addr() != "test_addr:42" || cfg.Cert() != "/opt/cert.crt" ||
 		cfg.Key() != "/opt/key.crt" || cfg.CACert() != "/opt/cacert.crt" {
 		t.Error("incorrect server config for a full environment")

@@ -20,16 +20,21 @@ import (
 	"arcadium.dev/core/config"
 )
 
-func postgresSetup(e config.Env) (*Postgres, error) {
+func postgresSetup(t *testing.T, e config.Env) *Postgres {
 	e.Set()
 	defer e.Unset()
-	return NewPostgres()
+
+	cfg, err := NewPostgres()
+	if err != nil {
+		t.Errorf("error occurred: %s", err)
+	}
+	return cfg
 }
 
 func TestPostgresFullEnv(t *testing.T) {
 	expectedDSN := "dbname='db' user='user' password='password' host='host' port='port' connect_timeout='connect_timeout' sslmode='sslmode' sslcert='sslcert' sslkey='sslkey' sslrootcert='sslrootcert'"
 
-	cfg, err := postgresSetup(config.Env(map[string]string{
+	cfg := postgresSetup(t, config.Env(map[string]string{
 		"POSTGRES_DB":              "db",
 		"POSTGRES_USER":            "user",
 		"POSTGRES_PASSWORD":        "password",
@@ -41,9 +46,7 @@ func TestPostgresFullEnv(t *testing.T) {
 		"POSTGRES_SSLKEY":          "sslkey",
 		"POSTGRES_SSLROOTCERT":     "sslrootcert",
 	}))
-	if err != nil {
-		t.Errorf("error occurred: %s", err)
-	}
+
 	if cfg.DSN() != expectedDSN {
 		t.Errorf("incorrect postgres DSN, expected %s, actual %s", expectedDSN, cfg.DSN())
 	}
@@ -52,7 +55,7 @@ func TestPostgresFullEnv(t *testing.T) {
 func TestPostgresPartialEnv(t *testing.T) {
 	expectedDSN := "dbname='players' user='arcadium' password='password' host='postgres' port='5432' sslmode='disable'"
 
-	cfg, err := postgresSetup(config.Env(map[string]string{
+	cfg := postgresSetup(t, config.Env(map[string]string{
 		"POSTGRES_DB":       "players",
 		"POSTGRES_USER":     "arcadium",
 		"POSTGRES_PASSWORD": "password",
@@ -60,9 +63,7 @@ func TestPostgresPartialEnv(t *testing.T) {
 		"POSTGRES_PORT":     "5432",
 		"POSTGRES_SSLMODE":  "disable",
 	}))
-	if err != nil {
-		t.Errorf("error occurred: %s", err)
-	}
+
 	if cfg.DSN() != expectedDSN {
 		t.Errorf("incorrect postgres DSN, expected %s, actual %s", expectedDSN, cfg.DSN())
 	}
