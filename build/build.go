@@ -21,8 +21,10 @@ import (
 	"runtime"
 )
 
+// Information holds the build information.
 type Information map[string]interface{}
 
+// Info is a quick way to populate the build information.
 func Info(v, b, s, d string) Information {
 	return map[string]interface{}{
 		"name":    filepath.Base(os.Args[0]),
@@ -34,10 +36,12 @@ func Info(v, b, s, d string) Information {
 	}
 }
 
+// Fields provides an intuitive way to add the build information to a log entry.
 func (i Information) Fields() map[string]interface{} {
 	return i
 }
 
+// Version provides the build information as a version string.
 func (i Information) Version() string {
 	return fmt.Sprintf("%s %s (branch: %s, shasum: %s, date: %s, go: %s)",
 		i["name"].(string),
