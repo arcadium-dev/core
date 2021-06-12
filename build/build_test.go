@@ -25,7 +25,7 @@ func setup() Information {
 	return info
 }
 
-func TestInfo(t *testing.T) {
+func TestFields(t *testing.T) {
 	info := setup()
 	fields := info.Fields()
 
