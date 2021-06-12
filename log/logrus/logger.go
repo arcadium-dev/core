@@ -15,10 +15,60 @@
 package logrus // import "arcadium.dev/core/log/logrus"
 
 import (
+	"os"
+
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"arcadium.dev/core/log"
 )
+
+// Logger
+
+type (
+	Logger struct {
+		*logger
+		file *os.File
+	}
+)
+
+func New(cfg log.Config) (*Logger, error) {
+	var (
+		err     error
+		file    *os.File
+		options []Option
+	)
+
+	if filename := cfg.File(); filename != "" {
+		file, err = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0640)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to open log file: %s", filename)
+		}
+		options = append(options, WithOutput(file))
+	}
+
+	if level := cfg.Level(); level != "" {
+		options = append(options, WithLevel(level))
+	}
+
+	if format := cfg.Format(); format != "" {
+		options = append(options, WithFormat(format))
+	}
+
+	return &Logger{
+		logger: newLogger(options...),
+		file:   file,
+	}, nil
+}
+
+func (l *Logger) Close() error {
+	if l.file == nil {
+		return nil
+	}
+	return l.file.Close()
+}
+
+// logger
 
 type (
 	logger struct {

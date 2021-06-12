@@ -16,14 +16,14 @@ package log // import "arcadium.dev/core/log"
 
 //go:generate mockgen -package mocklog -destination ./mock/config.go . Config
 
-// Config ... FIXME
+// Config provides the configuration for a logger.
 type Config interface {
-	// Level ... FIXME
+	// Level returns the configured log level.
 	Level() string
 
-	// File ... FIXME
+	// File returns the configured log file.
 	File() string
 
-	// Format .. FIXME
+	// Format returns the configured log format.
 	Format() string
 }
