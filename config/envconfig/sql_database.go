@@ -26,16 +26,19 @@ const (
 )
 
 type (
+	// DataSourceNamer is the interface that wraps the DSN method.
 	DataSourceNamer interface {
 		DSN() string
 	}
 
+	// SQLDatabase holds the configuration information for an SQL database.
 	SQLDatabase struct {
 		driver string // <PREFIX_>SQL_DATABASE_DRIVER
 		DataSourceNamer
 	}
 )
 
+// NewSQLDatabase returns the configuration of an SQL database.
 func NewSQLDatabase(opts ...Option) (*SQLDatabase, error) {
 	o := &options{}
 	for _, opt := range opts {
@@ -72,6 +75,7 @@ func NewSQLDatabase(opts ...Option) (*SQLDatabase, error) {
 	}, nil
 }
 
+// DriverName returns the name of the sql database driver.
 func (db *SQLDatabase) DriverName() string {
 	return db.driver
 }
