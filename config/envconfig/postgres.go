@@ -23,6 +23,7 @@ import (
 )
 
 type (
+	// Postgres holds the configuration settings needed to connect to a postgres database.
 	Postgres struct {
 		DB             string // POSTGRES_DB
 		User           string // POSTGRES_USER
@@ -37,6 +38,7 @@ type (
 	}
 )
 
+// NewPostgres returns the postgres configuration.
 func NewPostgres() (*Postgres, error) {
 	var p Postgres
 	if err := envconfig.Process("postgres", &p); err != nil {

@@ -24,6 +24,7 @@ const (
 )
 
 type (
+	// Logger holds the configuration settings for a logger.
 	Logger struct {
 		level  string // <PREFIX_>LOG_LEVEL
 		file   string // <PREFIX_>LOG_FILE
@@ -31,6 +32,7 @@ type (
 	}
 )
 
+// NewLogger returns the configuration of a logger.
 func NewLogger(opts ...Option) (*Logger, error) {
 	o := &options{}
 	for _, opt := range opts {
@@ -53,17 +55,17 @@ func NewLogger(opts ...Option) (*Logger, error) {
 	}, nil
 }
 
-// Level ... FIXME
+// Level returns the configured log level.
 func (l *Logger) Level() string {
 	return l.level
 }
 
-// File ... FIXME
+// File returns the configured log file.
 func (l *Logger) File() string {
 	return l.file
 }
 
-// Format ... FIXME
+// Format returns the configured log format.
 func (l *Logger) Format() string {
 	return l.format
 }

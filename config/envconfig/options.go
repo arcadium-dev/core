@@ -19,7 +19,7 @@ type (
 		prefix string
 	}
 
-	// Option ... FIXME
+	// Option provides options when colleting configuration information.
 	Option interface {
 		apply(*options)
 	}
@@ -37,7 +37,7 @@ func (o *option) apply(opts *options) {
 	o.f(opts)
 }
 
-// WithPrefix ... FIXME
+// WithPrefix adds a prefix to the name of the enviroment variables being referenced.
 func WithPrefix(prefix string) Option {
 	return newOption(func(opts *options) {
 		if prefix != "" {
