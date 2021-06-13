@@ -89,14 +89,13 @@ ci_test_lint() {
 
 
 ci_test_unit() {
-  local target="./..."
+  local targets="$(go list ./... | grep -v /mock)"
   if [[ "${1:-}" != "" ]]; then
     target="$1"
   fi
 
   info "Unit Testing"
-  # FIXME
-  if ! docker-compose run --rm go test -cover "${target}" | grep -Ev "(^go: downloading|^[[:space:]]*$)"; then
+  if ! docker-compose run --rm go test -cover ${targets} | grep -Ev "(^go: downloading|^[[:space:]]*$)"; then
     failed
   fi
   success
