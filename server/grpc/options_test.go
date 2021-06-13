@@ -24,7 +24,7 @@ import (
 )
 
 func TestGRPCWithoutReflection(t *testing.T) {
-	s := &gRPCServer{reflection: true}
+	s := &Server{reflection: true}
 
 	WithoutReflection().apply(s)
 
@@ -35,7 +35,7 @@ func TestGRPCWithoutReflection(t *testing.T) {
 }
 
 func TestGRPCWithInsecure(t *testing.T) {
-	s := &gRPCServer{reflection: true}
+	s := &Server{reflection: true}
 
 	WithInsecure().apply(s)
 
@@ -46,7 +46,7 @@ func TestGRPCWithInsecure(t *testing.T) {
 }
 
 func TestGRPCWithMetrics(t *testing.T) {
-	s := &gRPCServer{reflection: true}
+	s := &Server{reflection: true}
 
 	WithMetrics().apply(s)
 
@@ -57,7 +57,7 @@ func TestGRPCWithMetrics(t *testing.T) {
 }
 
 func TestGRPCWithLogger(t *testing.T) {
-	s := &gRPCServer{reflection: true}
+	s := &Server{reflection: true}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -73,7 +73,7 @@ func TestGRPCWithLogger(t *testing.T) {
 }
 
 func TestGRPCWithTracer(t *testing.T) {
-	s := &gRPCServer{reflection: true}
+	s := &Server{reflection: true}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
