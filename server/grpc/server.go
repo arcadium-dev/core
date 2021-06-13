@@ -29,7 +29,7 @@ import (
 )
 
 type (
-	// Server ... FIXME
+	// Server is a gRPC server which will service gRPC requests.
 	Server struct {
 		addr       string
 		reflection bool
