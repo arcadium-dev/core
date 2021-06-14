@@ -17,6 +17,8 @@ package envconfig // import "arcadium.dev/core/config/envconfig
 import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
+
+	"arcadium.dev/core/config"
 )
 
 const (
@@ -33,12 +35,12 @@ type (
 )
 
 // NewLogger returns the configuration of a logger.
-func NewLogger(opts ...Option) (*Logger, error) {
-	o := &options{}
+func NewLogger(opts ...config.Option) (*Logger, error) {
+	o := &config.Options{}
 	for _, opt := range opts {
-		opt.apply(o)
+		opt.Apply(o)
 	}
-	prefix := o.prefix + logPrefix
+	prefix := o.Prefix() + logPrefix
 
 	config := struct {
 		Level  string

@@ -20,7 +20,7 @@ import (
 	"arcadium.dev/core/config"
 )
 
-func setupSQLDatabase(t *testing.T, e config.Env, opts ...Option) *SQLDatabase {
+func setupSQLDatabase(t *testing.T, e config.Env, opts ...config.Option) *SQLDatabase {
 	e.Set()
 	defer e.Unset()
 
@@ -52,7 +52,7 @@ func TestSQLDatabaseValidDriver(t *testing.T) {
 func TestSQLDatabaseWithPrefix(t *testing.T) {
 	cfg := setupSQLDatabase(t, config.Env(map[string]string{
 		"PLAYERS_DATABASE_DRIVER": "postgres",
-	}), WithPrefix("players"))
+	}), config.WithPrefix("players"))
 
 	if cfg.DriverName() != "postgres" {
 		t.Error("incorrect sql database config for a valid environment")

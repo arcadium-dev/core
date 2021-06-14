@@ -12,22 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package envconfig
+package config
 
 import (
 	"testing"
 )
 
 func TestOptions(t *testing.T) {
-	opts := &options{}
+	opts := &Options{}
 
-	WithPrefix("").apply(opts)
-	if opts.prefix != "" {
+	WithPrefix("").Apply(opts)
+	if opts.Prefix() != "" {
 		t.Error("prefix should be empty")
 	}
 
-	WithPrefix("prefix").apply(opts)
-	if opts.prefix != "prefix_" {
-		t.Errorf("incorrect prefix: %s", opts.prefix)
+	WithPrefix("prefix").Apply(opts)
+	if opts.Prefix() != "prefix_" {
+		t.Errorf("incorrect prefix: %s", opts.Prefix())
 	}
 }

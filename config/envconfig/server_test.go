@@ -20,7 +20,7 @@ import (
 	"arcadium.dev/core/config"
 )
 
-func setupServer(t *testing.T, e config.Env, opts ...Option) *Server {
+func setupServer(t *testing.T, e config.Env, opts ...config.Option) *Server {
 	e.Set()
 	defer e.Unset()
 
@@ -71,7 +71,7 @@ func TestServerWithPrefix(t *testing.T) {
 		"FANCY_SERVER_CERT":   "/opt/cert.crt",
 		"FANCY_SERVER_KEY":    "/opt/key.crt",
 		"FANCY_SERVER_CACERT": "/opt/cacert.crt",
-	}), WithPrefix("fancy"))
+	}), config.WithPrefix("fancy"))
 
 	if cfg.Addr() != "test_addr:42" || cfg.Cert() != "/opt/cert.crt" ||
 		cfg.Key() != "/opt/key.crt" || cfg.CACert() != "/opt/cacert.crt" {
