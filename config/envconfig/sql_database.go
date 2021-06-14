@@ -17,6 +17,7 @@ package envconfig // import "arcadium.dev/core/config/envconfig
 import (
 	"strings"
 
+	"arcadium.dev/core/config"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 )
@@ -39,12 +40,12 @@ type (
 )
 
 // NewSQLDatabase returns the configuration of an SQL database.
-func NewSQLDatabase(opts ...Option) (*SQLDatabase, error) {
-	o := &options{}
+func NewSQLDatabase(opts ...config.Option) (*SQLDatabase, error) {
+	o := &config.Options{}
 	for _, opt := range opts {
-		opt.apply(o)
+		opt.Apply(o)
 	}
-	prefix := o.prefix + sqlPrefix
+	prefix := o.Prefix() + sqlPrefix
 
 	config := struct {
 		Driver string `default:"postgres"`

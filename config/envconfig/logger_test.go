@@ -20,7 +20,7 @@ import (
 	"arcadium.dev/core/config"
 )
 
-func loggerSetup(t *testing.T, e config.Env, opts ...Option) *Logger {
+func loggerSetup(t *testing.T, e config.Env, opts ...config.Option) *Logger {
 	e.Set()
 	defer e.Unset()
 
@@ -56,7 +56,7 @@ func TestLoggerWithPrefix(t *testing.T) {
 		"PREFIX_LOG_LEVEL":  "level",
 		"PREFIX_LOG_FILE":   "file",
 		"PREFIX_LOG_FORMAT": "format",
-	}), WithPrefix("prefix"))
+	}), config.WithPrefix("prefix"))
 
 	if cfg.Level() != "level" || cfg.File() != "file" || cfg.Format() != "format" {
 		t.Error("incorrect logging config for a full environment")

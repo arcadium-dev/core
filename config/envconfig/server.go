@@ -15,6 +15,7 @@
 package envconfig // import "arcadium.dev/core/config/envconfig
 
 import (
+	"arcadium.dev/core/config"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 )
@@ -34,12 +35,12 @@ type (
 )
 
 // NewServer returns the server configuration.
-func NewServer(opts ...Option) (*Server, error) {
-	o := &options{}
+func NewServer(opts ...config.Option) (*Server, error) {
+	o := &config.Options{}
 	for _, opt := range opts {
-		opt.apply(o)
+		opt.Apply(o)
 	}
-	prefix := o.prefix + serverPrefix
+	prefix := o.Prefix() + serverPrefix
 
 	config := struct {
 		Addr   string

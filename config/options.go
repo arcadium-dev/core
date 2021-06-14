@@ -12,34 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package envconfig // import "arcadium.dev/core/config/envconfig
+package config // import "arcadium.dev/core/config
 
 type (
-	options struct {
+	Options struct {
 		prefix string
 	}
 
 	// Option provides options when collecting configuration information.
 	Option interface {
-		apply(*options)
+		Apply(*Options)
 	}
 
 	option struct {
-		f func(*options)
+		f func(*Options)
 	}
 )
 
-func newOption(f func(*options)) *option {
+func (o *Options) Prefix() string {
+	return o.prefix
+}
+
+func newOption(f func(*Options)) *option {
 	return &option{f: f}
 }
 
-func (o *option) apply(opts *options) {
+func (o *option) Apply(opts *Options) {
 	o.f(opts)
 }
 
 // WithPrefix adds a prefix to the name of the enviroment variables being referenced.
 func WithPrefix(prefix string) Option {
-	return newOption(func(opts *options) {
+	return newOption(func(opts *Options) {
 		if prefix != "" {
 			opts.prefix = prefix + "_" + opts.prefix
 		}
