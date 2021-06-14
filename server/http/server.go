@@ -14,8 +14,6 @@
 
 package http // import "arcadium.dev/core/server/http"
 
-//go:generate mockgen -package mockhttp -destination ./mock/server.go . Server
-
 import (
 	"context"
 	"net"

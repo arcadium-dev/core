@@ -15,9 +15,6 @@
 package logrus // import "arcadium.dev/core/log/logrus"
 
 import (
-	"os"
-
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"arcadium.dev/core/log"
@@ -27,163 +24,110 @@ import (
 
 type (
 	Logger struct {
-		*logger
-		file *os.File
-	}
-)
-
-func New(cfg log.Config) (*Logger, error) {
-	var (
-		err     error
-		file    *os.File
-		options []Option
-	)
-
-	if filename := cfg.File(); filename != "" {
-		file, err = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0640)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to open log file: %s", filename)
-		}
-		options = append(options, WithOutput(file))
-	}
-
-	if level := cfg.Level(); level != "" {
-		options = append(options, WithLevel(level))
-	}
-
-	if format := cfg.Format(); format != "" {
-		options = append(options, WithFormat(format))
-	}
-
-	return &Logger{
-		logger: newLogger(options...),
-		file:   file,
-	}, nil
-}
-
-func (l *Logger) Close() error {
-	if l.file == nil {
-		return nil
-	}
-	return l.file.Close()
-}
-
-// logger
-
-type (
-	logger struct {
 		entry *logrus.Entry
 		level logrus.Level
 	}
 )
 
-func newLogger(opts ...Option) *logger {
+func New(cfg log.Config) *Logger {
 	l := logrus.New()
 
-	o := &options{}
-	for _, opt := range opts {
-		opt.apply(o)
+	level, err := logrus.ParseLevel(cfg.Level())
+	if err != nil {
+		level = logrus.InfoLevel
 	}
-	if o.level != nil {
-		l.SetLevel(*o.level)
-	}
-	if o.output != nil {
-		l.SetOutput(o.output)
-	}
-	if o.formatter != nil {
-		l.SetFormatter(o.formatter)
-	}
+	l.SetLevel(level)
 
-	return &logger{
+	return &Logger{
 		entry: logrus.NewEntry(l),
 		level: l.Level,
 	}
 }
 
-func (l *logger) WithField(key string, value interface{}) log.Logger {
-	return &logger{entry: l.entry.WithField(key, value), level: l.level}
+func (l *Logger) WithField(key string, value interface{}) log.Logger {
+	return &Logger{entry: l.entry.WithField(key, value), level: l.level}
 }
 
-func (l *logger) WithFields(fields map[string]interface{}) log.Logger {
-	return &logger{entry: l.entry.WithFields(fields), level: l.level}
+func (l *Logger) WithFields(fields map[string]interface{}) log.Logger {
+	return &Logger{entry: l.entry.WithFields(fields), level: l.level}
 }
 
-func (l *logger) WithError(err error) log.Logger {
-	return &logger{entry: l.entry.WithError(err), level: l.level}
+func (l *Logger) WithError(err error) log.Logger {
+	return &Logger{entry: l.entry.WithError(err), level: l.level}
 }
 
-func (l *logger) Debug(args ...interface{}) {
+func (l *Logger) Debug(args ...interface{}) {
 	l.entry.Debug(args...)
 }
 
-func (l *logger) Debugln(args ...interface{}) {
+func (l *Logger) Debugln(args ...interface{}) {
 	l.entry.Debugln(args...)
 }
 
-func (l *logger) Debugf(format string, args ...interface{}) {
+func (l *Logger) Debugf(format string, args ...interface{}) {
 	l.entry.Debugf(format, args...)
 }
 
-func (l *logger) Info(args ...interface{}) {
+func (l *Logger) Info(args ...interface{}) {
 	l.entry.Info(args...)
 }
 
-func (l *logger) Infoln(args ...interface{}) {
+func (l *Logger) Infoln(args ...interface{}) {
 	l.entry.Infoln(args...)
 }
 
-func (l *logger) Infof(format string, args ...interface{}) {
+func (l *Logger) Infof(format string, args ...interface{}) {
 	l.entry.Infof(format, args...)
 }
 
-func (l *logger) Print(args ...interface{}) {
+func (l *Logger) Print(args ...interface{}) {
 	l.entry.Info(args...)
 }
 
-func (l *logger) Println(args ...interface{}) {
+func (l *Logger) Println(args ...interface{}) {
 	l.entry.Infoln(args...)
 }
 
-func (l *logger) Printf(format string, args ...interface{}) {
+func (l *Logger) Printf(format string, args ...interface{}) {
 	l.entry.Infof(format, args...)
 }
 
-func (l *logger) Warning(args ...interface{}) {
+func (l *Logger) Warning(args ...interface{}) {
 	l.entry.Warning(args...)
 }
 
-func (l *logger) Warningln(args ...interface{}) {
+func (l *Logger) Warningln(args ...interface{}) {
 	l.entry.Warningln(args...)
 }
 
-func (l *logger) Warningf(format string, args ...interface{}) {
+func (l *Logger) Warningf(format string, args ...interface{}) {
 	l.entry.Warningf(format, args...)
 }
 
-func (l *logger) Error(args ...interface{}) {
+func (l *Logger) Error(args ...interface{}) {
 	l.entry.Error(args...)
 }
 
-func (l *logger) Errorln(args ...interface{}) {
+func (l *Logger) Errorln(args ...interface{}) {
 	l.entry.Errorln(args...)
 }
 
-func (l *logger) Errorf(format string, args ...interface{}) {
+func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.entry.Errorf(format, args...)
 }
 
-func (l *logger) Fatal(args ...interface{}) {
+func (l *Logger) Fatal(args ...interface{}) {
 	l.entry.Fatal(args...)
 }
 
-func (l *logger) Fatalln(args ...interface{}) {
+func (l *Logger) Fatalln(args ...interface{}) {
 	l.entry.Fatalln(args...)
 }
 
-func (l *logger) Fatalf(format string, args ...interface{}) {
+func (l *Logger) Fatalf(format string, args ...interface{}) {
 	l.entry.Fatalf(format, args...)
 }
 
-func (l *logger) V(level int) bool {
+func (l *Logger) V(level int) bool {
 	return l.level <= logrus.Level(level)
 }

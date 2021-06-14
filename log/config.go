@@ -20,10 +20,4 @@ package log // import "arcadium.dev/core/log"
 type Config interface {
 	// Level returns the configured log level.
 	Level() string
-
-	// File returns the configured log file.
-	File() string
-
-	// Format returns the configured log format.
-	Format() string
 }
