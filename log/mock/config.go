@@ -33,34 +33,6 @@ func (m *MockConfig) EXPECT() *MockConfigMockRecorder {
 	return m.recorder
 }
 
-// File mocks base method.
-func (m *MockConfig) File() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "File")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// File indicates an expected call of File.
-func (mr *MockConfigMockRecorder) File() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "File", reflect.TypeOf((*MockConfig)(nil).File))
-}
-
-// Format mocks base method.
-func (m *MockConfig) Format() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Format")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// Format indicates an expected call of Format.
-func (mr *MockConfigMockRecorder) Format() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Format", reflect.TypeOf((*MockConfig)(nil).Format))
-}
-
 // Level mocks base method.
 func (m *MockConfig) Level() string {
 	m.ctrl.T.Helper()
