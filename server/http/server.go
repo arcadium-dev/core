@@ -1,4 +1,4 @@
-// Copyright 2021 Ian Cahoon <icahoon@gmail.com>
+// Copyright 2021 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,18 +29,9 @@ import (
 )
 
 type (
-	// Handler is a type alias for http.Handler.
-	Handler = http.Handler
 
 	// Server is an HTTP server to serve HTTP requests.
-	Server interface {
-		server.Server
-
-		// Handle associates the given handler with the server.
-		Handle(Handler)
-	}
-
-	httpServer struct {
+	Server struct {
 		addr   string
 		logger log.Logger
 
@@ -50,8 +41,8 @@ type (
 )
 
 // New creates an HTTP server with a default handler and has not started to accept requests yet.
-func New(config server.Config, opts ...Option) (Server, error) {
-	s := &httpServer{
+func New(config server.Config, opts ...Option) (*Server, error) {
+	s := &Server{
 		addr:   config.Addr(),
 		logger: log.NewNullLogger(),
 		server: &http.Server{},
@@ -79,7 +70,7 @@ func New(config server.Config, opts ...Option) (Server, error) {
 
 // Serve accepts incoming connections, creating a new service goroutine for each. The
 // service goroutine reads requests and then call the handler to reply to them.
-func (s *httpServer) Serve(result chan<- error) {
+func (s *Server) Serve(result chan<- error) {
 	s.logger.Info("serving")
 	defer s.logger.Info("serving complete")
 
@@ -103,7 +94,7 @@ func (s *httpServer) Serve(result chan<- error) {
 }
 
 // Stop shuts down the http server gracefully without interrupting an active connections.
-func (s *httpServer) Stop() {
+func (s *Server) Stop() {
 	// TODO: Do we want to make the shutdown timeout configurable?
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 	defer cancel()
@@ -116,7 +107,7 @@ func (s *httpServer) Stop() {
 }
 
 // Handle associates the given handler with the server.
-func (s *httpServer) Handle(mux Handler) {
+func (s *Server) Handle(mux http.Handler) {
 	// Don't overwrite the existing handler if mux is nil.
 	if mux == nil {
 		return

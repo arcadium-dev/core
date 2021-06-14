@@ -12,43 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package http // import "arcadium.dev/core/server/http"
+package http
 
 import (
 	"crypto/tls"
+	"net/http"
+	"testing"
 
-	"arcadium.dev/core/log"
+	"github.com/golang/mock/gomock"
+
+	mocklog "arcadium.dev/core/log/mock"
 )
 
-type (
-	// Option provides options for configuring the creation of a http server.
-	Option interface {
-		apply(*Server)
+func TestHTTPServerWithTLS(t *testing.T) {
+	s := &Server{
+		server: &http.Server{},
 	}
+	cfg := &tls.Config{}
+	WithTLS(cfg).apply(s)
 
-	option struct {
-		f func(*Server)
+	if s.server.TLSConfig == nil {
+		t.Error("failed to set TLSConfig")
 	}
-)
-
-func newOption(f func(*Server)) option {
-	return option{f: f}
 }
 
-func (o option) apply(s *Server) {
-	o.f(s)
-}
+func TestHTTPServerWithLogger(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocklog.NewMockLogger(ctrl)
 
-// WithTLS will configure the server to require TLS.
-func WithTLS(cfg *tls.Config) Option {
-	return newOption(func(s *Server) {
-		s.server.TLSConfig = cfg
-	})
-}
+	s := &Server{}
 
-// WithLogger will add logging to the http server.
-func WithLogger(l log.Logger) Option {
-	return newOption(func(s *Server) {
-		s.logger = l
-	})
+	WithLogger(mockLogger).apply(s)
+
+	if s.logger != mockLogger {
+		t.Error("failed to set logger")
+	}
 }
