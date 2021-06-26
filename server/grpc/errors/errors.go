@@ -60,6 +60,24 @@ func Wrapf(e error, format string, a ...interface{}) error {
 	return Wrap(e, fmt.Sprintf(format, a...))
 }
 
+// Unwrap provides a local implementation of the standard errors
+// function to allow users to import a single errors package.
+func Unwrap(err error) error {
+	return errors.Unwrap(err)
+}
+
+// Is provides a local implementation of the standard errors
+// function to allow users to import a single errors package.
+func Is(err, target error) bool {
+	return errors.Is(err, target)
+}
+
+// As arovides a local implementation of the standard errors
+// function to allow users to import a single errors package.
+func As(err error, target interface{}) bool {
+	return errors.As(err, target)
+}
+
 type (
 	// gerror wraps a standard error with a grpc code.
 	gerror struct {
@@ -101,4 +119,7 @@ var (
 
 	// ErrUnimplemented indicates the requested service has not been implemented.
 	Unimplemented = New(codes.Unimplemented, codes.Unimplemented.String())
+
+	// Internal indicates an internal errors.
+	Internal = New(codes.Internal, codes.Internal.String())
 )

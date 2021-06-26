@@ -15,7 +15,6 @@
 package errors
 
 import (
-	"errors"
 	"testing"
 
 	"google.golang.org/grpc/codes"
@@ -51,19 +50,19 @@ func TestGameError(t *testing.T) {
 	}
 
 	// Test Unwrap()
-	base := errors.Unwrap(err)
+	base := Unwrap(err)
 	if base != InvalidArgument {
 		t.Errorf("unexpected unwrapped error: %s", base)
 	}
 
 	// Test Is()
-	if !errors.Is(err, InvalidArgument) {
+	if !Is(err, InvalidArgument) {
 		t.Error("should be an invalid player id error")
 	}
 
 	// Test As()
 	var e *gerror
-	if !errors.As(err, &e) {
+	if !As(err, &e) {
 		t.Error("should be a game error")
 	}
 	if e != err {
@@ -92,6 +91,7 @@ func TestGameBaseErrors(t *testing.T) {
 		{NotFound, codes.NotFound},
 		{AlreadyExists, codes.AlreadyExists},
 		{Unimplemented, codes.Unimplemented},
+		{Internal, codes.Internal},
 	}
 
 	for _, entry := range table {
