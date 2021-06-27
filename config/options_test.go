@@ -32,3 +32,17 @@ func TestOptionsWithPrefix(t *testing.T) {
 		t.Errorf("incorrect prefix: %s", opts.Prefix())
 	}
 }
+
+func TestOptionsInjectFailure(t *testing.T) {
+	opts := &Options{}
+
+	expectedErr := "Injected Error"
+	InjectFailure(errors.New(expectedErr)).Apply(opts)
+	err := opts.InjectedFailure()
+	if err == nil {
+		t.Errorf("Expected an injected error")
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Expected %s, actual %s", expectedErr, err)
+	}
+}
