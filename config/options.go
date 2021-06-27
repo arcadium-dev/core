@@ -17,7 +17,6 @@ package config // import "arcadium.dev/core/config
 type (
 	Options struct {
 		prefix string
-		err    error
 	}
 
 	// Option provides options when collecting configuration information.
@@ -34,10 +33,6 @@ func (o *Options) Prefix() string {
 	return o.prefix
 }
 
-func (o *Options) InjectedFailure() error {
-	return o.err
-}
-
 func newOption(f func(*Options)) *option {
 	return &option{f: f}
 }
@@ -52,13 +47,5 @@ func WithPrefix(prefix string) Option {
 		if prefix != "" {
 			opts.prefix = prefix + "_" + opts.prefix
 		}
-	})
-}
-
-// InjectFailure instructs the config package using this option to return the error.
-// This is useful for unit testing.
-func InjectFailure(err error) Option {
-	return newOption(func(opts *Options) {
-		opts.err = err
 	})
 }
