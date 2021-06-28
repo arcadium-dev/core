@@ -22,32 +22,32 @@ import (
 type (
 	// Option provides options for configuring the creation of a gRPC server.
 	Option interface {
-		apply(*Server)
+		apply(*GRPCServer)
 	}
 
 	option struct {
-		f func(*Server)
+		f func(*GRPCServer)
 	}
 )
 
-func newOption(f func(*Server)) option {
+func newOption(f func(*GRPCServer)) option {
 	return option{f: f}
 }
 
-func (o option) apply(s *Server) {
+func (o option) apply(s *GRPCServer) {
 	o.f(s)
 }
 
 // WithoutReflection disables the registration of the reflection service.
 func WithoutReflection() Option {
-	return newOption(func(s *Server) {
+	return newOption(func(s *GRPCServer) {
 		s.reflection = false
 	})
 }
 
 // WithInsecure will configure the server to allow insecure connections.
 func WithInsecure() Option {
-	return newOption(func(s *Server) {
+	return newOption(func(s *GRPCServer) {
 		s.insecure = true
 	})
 }
@@ -55,7 +55,7 @@ func WithInsecure() Option {
 // WithMetrics will configure a unary server interceptor which provides server
 // side metrics.
 func WithMetrics() Option {
-	return newOption(func(s *Server) {
+	return newOption(func(s *GRPCServer) {
 		s.metrics = true
 	})
 }
@@ -63,7 +63,7 @@ func WithMetrics() Option {
 // WithLogger will configure a unary server interceptor which provides logging
 // of each gRPC request, and embeds a logger into the request's context.
 func WithLogger(l log.Logger) Option {
-	return newOption(func(s *Server) {
+	return newOption(func(s *GRPCServer) {
 		s.logger = l
 	})
 }
@@ -71,7 +71,7 @@ func WithLogger(l log.Logger) Option {
 // WithTrace will configure a unary server interceptor which provides tracing
 // of each gRPC request, and embeds trace info into the request's context.
 func WithTracer(t trace.Tracer) Option {
-	return newOption(func(s *Server) {
+	return newOption(func(s *GRPCServer) {
 		s.tracer = t
 	})
 }

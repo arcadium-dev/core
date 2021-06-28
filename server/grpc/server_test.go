@@ -24,7 +24,7 @@ import (
 	mockserver "arcadium.dev/core/server/mock"
 )
 
-func sharedNewTest(t *testing.T, setup func(*mockserver.MockConfig), check func(*Server, error), opts ...Option) {
+func sharedNewTest(t *testing.T, setup func(*mockserver.MockConfig), check func(*GRPCServer, error), opts ...Option) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -39,7 +39,7 @@ func TestGRPCServerNewSecure01(t *testing.T) {
 			mockConfig.EXPECT().Cert().Return("../test_data/cert.pem")
 			mockConfig.EXPECT().Key().Return("")
 		},
-		func(s *Server, err error) {
+		func(s *GRPCServer, err error) {
 			expectedErr := "A certificate must be configured for TLS, or the WithInsecure option must be given to run without TLS."
 			if s != nil || err == nil {
 				t.Error("New failed")
@@ -56,7 +56,7 @@ func TestGRPCServerNewSecure02(t *testing.T) {
 		func(mockConfig *mockserver.MockConfig) {
 			mockConfig.EXPECT().Cert().Return("")
 		},
-		func(s *Server, err error) {
+		func(s *GRPCServer, err error) {
 			expectedErr := "A certificate must be configured for TLS, or the WithInsecure option must be given to run without TLS."
 			if s != nil || err == nil {
 				t.Error("New failed")
@@ -76,7 +76,7 @@ func TestGRPCServerNewTLS(t *testing.T) {
 			mockConfig.EXPECT().CACert().Return("../test_data/rootCA.pem")
 			mockConfig.EXPECT().Addr().Return(":4201")
 		},
-		func(s *Server, err error) {
+		func(s *GRPCServer, err error) {
 			if s == nil || err != nil {
 				t.Error("New failed")
 			}
@@ -89,7 +89,7 @@ func TestGRPCServerNewInsecure(t *testing.T) {
 		func(mockConfig *mockserver.MockConfig) {
 			mockConfig.EXPECT().Addr().Return(":4201")
 		},
-		func(s *Server, err error) {
+		func(s *GRPCServer, err error) {
 			if s == nil || err != nil {
 				t.Error("New failed")
 			}
@@ -98,7 +98,7 @@ func TestGRPCServerNewInsecure(t *testing.T) {
 	)
 }
 
-func sharedServeTest(t *testing.T, setup func(*mockserver.MockConfig), check func(*Server, chan error)) {
+func sharedServeTest(t *testing.T, setup func(*mockserver.MockConfig), check func(*GRPCServer, chan error)) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -118,7 +118,7 @@ func TestGRPCServerServeBadAddr(t *testing.T) {
 		func(mockConfig *mockserver.MockConfig) {
 			mockConfig.EXPECT().Addr().Return(":-1")
 		},
-		func(s *Server, result chan error) {
+		func(s *GRPCServer, result chan error) {
 			err := <-result
 
 			expectedErr := "Failed to listen on :-1: listen tcp: address -1: invalid port"
@@ -134,7 +134,7 @@ func TestGRPCServerServeStop(t *testing.T) {
 		func(mockConfig *mockserver.MockConfig) {
 			mockConfig.EXPECT().Addr().Return(":4201")
 		},
-		func(s *Server, result chan error) {
+		func(s *GRPCServer, result chan error) {
 			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(500*time.Millisecond))
 			defer cancel()
 

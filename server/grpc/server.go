@@ -14,6 +14,8 @@
 
 package grpc // import "arcadium.dev/core/server/grpc"
 
+//go:generate mockgen -package mockgrpc -destination ./mock/server.go . Server
+
 import (
 	"net"
 
@@ -30,7 +32,12 @@ import (
 
 type (
 	// Server is a gRPC server which will service gRPC requests.
-	Server struct {
+	Server interface {
+		server.Server       // Implement's Serve and Stop.
+		Register([]Service) // Registers the given services with this server.
+	}
+
+	GRPCServer struct {
 		addr       string
 		reflection bool
 		insecure   bool
@@ -44,8 +51,8 @@ type (
 )
 
 // New creates a gRPC server which has no service registered and has not started to accept requests yet.
-func New(config server.Config, opts ...Option) (*Server, error) {
-	s := &Server{
+func New(config server.Config, opts ...Option) (*GRPCServer, error) {
+	s := &GRPCServer{
 		reflection: true,
 		logger:     log.NewNullLogger(),
 	}
@@ -93,7 +100,7 @@ func New(config server.Config, opts ...Option) (*Server, error) {
 // Serve accepts incoming incoming connections, reads the gRPC requests and calls the
 // registered service handlers to reply to them. This will return a non-nil error
 // unless Stop is called.
-func (s *Server) Serve(result chan<- error) {
+func (s *GRPCServer) Serve(result chan<- error) {
 	s.logger.Info("serving")
 	defer s.logger.Info("serving complete")
 
@@ -116,14 +123,14 @@ func (s *Server) Serve(result chan<- error) {
 
 // Stop shuts down the gRPC server gracefully. It stops the server from accepting new connections
 // and blocks until all the pending RPCs have completed.
-func (s *Server) Stop() {
+func (s *GRPCServer) Stop() {
 	s.server.GracefulStop()
 	s.logger.Info("stopped")
 }
 
 // Register registers the given slices of services with the server. This
 // must be called before invoking Server.
-func (s *Server) Register(services []Service) {
+func (s *GRPCServer) Register(services []Service) {
 	for _, service := range services {
 		service.Register(s.server)
 		s.logger.WithFields(service.LogFields()).Info("registered")
