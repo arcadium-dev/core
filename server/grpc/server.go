@@ -33,7 +33,7 @@ import (
 type (
 	// Server is a gRPC server which will service gRPC requests.
 	Server interface {
-		server.Server       // Implement's Serve and Stop.
+		server.Server       // Implements Serve and Stop.
 		Register([]Service) // Registers the given services with this server.
 	}
 

@@ -25,7 +25,7 @@ import (
 )
 
 func TestHTTPServerWithTLS(t *testing.T) {
-	s := &Server{
+	s := &HTTPServer{
 		server: &http.Server{},
 	}
 	cfg := &tls.Config{}
@@ -41,7 +41,7 @@ func TestHTTPServerWithLogger(t *testing.T) {
 	defer ctrl.Finish()
 	mockLogger := mocklog.NewMockLogger(ctrl)
 
-	s := &Server{}
+	s := &HTTPServer{}
 
 	WithLogger(mockLogger).apply(s)
 

@@ -23,32 +23,32 @@ import (
 type (
 	// Option provides options for configuring the creation of a http server.
 	Option interface {
-		apply(*Server)
+		apply(*HTTPServer)
 	}
 
 	option struct {
-		f func(*Server)
+		f func(*HTTPServer)
 	}
 )
 
-func newOption(f func(*Server)) option {
+func newOption(f func(*HTTPServer)) option {
 	return option{f: f}
 }
 
-func (o option) apply(s *Server) {
+func (o option) apply(s *HTTPServer) {
 	o.f(s)
 }
 
 // WithTLS will configure the server to require TLS.
 func WithTLS(cfg *tls.Config) Option {
-	return newOption(func(s *Server) {
+	return newOption(func(s *HTTPServer) {
 		s.server.TLSConfig = cfg
 	})
 }
 
 // WithLogger will add logging to the http server.
 func WithLogger(l log.Logger) Option {
-	return newOption(func(s *Server) {
+	return newOption(func(s *HTTPServer) {
 		s.logger = l
 	})
 }
