@@ -22,8 +22,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
-
+	"arcadium.dev/core/errors"
 	"arcadium.dev/core/log"
 	"arcadium.dev/core/server"
 )

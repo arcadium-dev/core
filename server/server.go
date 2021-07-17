@@ -22,8 +22,6 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // Server abstracts a server.
@@ -54,11 +52,6 @@ func serve(sig chan os.Signal, result chan error, server Server) error {
 	case err = <-result:
 		if err != nil {
 			log.Printf("\n\nError: %s\n\n", err.Error())
-			if err, ok := err.(interface{ StackTrace() errors.StackTrace }); ok {
-				for _, f := range err.StackTrace() {
-					log.Printf("%+s:%d\n", f, f)
-				}
-			}
 		}
 	case signal := <-sig:
 		log.Printf("\n\nsignal received: %s\n\n", signal)

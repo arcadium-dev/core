@@ -16,9 +16,9 @@ package envconfig // import "arcadium.dev/core/config/envconfig
 
 import (
 	"github.com/kelseyhightower/envconfig"
-	"github.com/pkg/errors"
 
 	"arcadium.dev/core/config"
+	"arcadium.dev/core/errors"
 )
 
 const (

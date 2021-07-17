@@ -19,12 +19,12 @@ package grpc // import "arcadium.dev/core/server/grpc"
 import (
 	"net"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 
+	"arcadium.dev/core/errors"
 	"arcadium.dev/core/log"
 	"arcadium.dev/core/server"
 	"arcadium.dev/core/trace"

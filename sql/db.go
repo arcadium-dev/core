@@ -16,14 +16,12 @@ package sql // import "arcadium.dev/core/sql"
 
 import (
 	"database/sql"
-
-	"github.com/pkg/errors"
 )
 
 func Open(config Config, opts ...Option) (DB, error) {
 	sqldb, err := sql.Open(config.DriverName(), config.DSN())
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	var db DB = &sqlDB{DB: sqldb}
 
