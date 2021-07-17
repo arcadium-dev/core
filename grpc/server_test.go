@@ -36,7 +36,7 @@ func sharedNewTest(t *testing.T, setup func(*mockserver.MockConfig), check func(
 func TestGRPCServerNewSecure01(t *testing.T) {
 	sharedNewTest(t,
 		func(mockConfig *mockserver.MockConfig) {
-			mockConfig.EXPECT().Cert().Return("../test_data/cert.pem")
+			mockConfig.EXPECT().Cert().Return("../insecure/cert.pem")
 			mockConfig.EXPECT().Key().Return("")
 		},
 		func(s *GRPCServer, err error) {
@@ -71,9 +71,9 @@ func TestGRPCServerNewSecure02(t *testing.T) {
 func TestGRPCServerNewTLS(t *testing.T) {
 	sharedNewTest(t,
 		func(mockConfig *mockserver.MockConfig) {
-			mockConfig.EXPECT().Cert().Return("../test_data/cert.pem").Times(2)
-			mockConfig.EXPECT().Key().Return("../test_data/key.pem").Times(2)
-			mockConfig.EXPECT().CACert().Return("../test_data/rootCA.pem")
+			mockConfig.EXPECT().Cert().Return("../insecure/cert.pem").Times(2)
+			mockConfig.EXPECT().Key().Return("../insecure/key.pem").Times(2)
+			mockConfig.EXPECT().CACert().Return("../insecure/rootCA.pem")
 			mockConfig.EXPECT().Addr().Return(":4201")
 		},
 		func(s *GRPCServer, err error) {
