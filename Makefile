@@ -38,7 +38,6 @@ fmt:
 	@go fmt ./...
 .PHONY: fmt
 
-
 tidy:
 	@printf "\nRunning go mod tidy...\n"
 	@go mod tidy
