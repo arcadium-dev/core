@@ -37,7 +37,7 @@ type Server interface {
 }
 
 // Serve starts the server and will catch os signals. If an os signal is
-// caught, the server will be cancelled via it's the context.
+// caught, the server will be cancelled via it's context.
 func Serve(s Server) error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)

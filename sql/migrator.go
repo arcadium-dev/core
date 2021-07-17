@@ -14,32 +14,12 @@
 
 package sql // import "arcadium.dev/core/sql"
 
-type (
-	options struct {
-		migrator Migrator
-	}
+//go:generate mockgen -package mocksql -destination ./mock/migrator.go . Migrator
 
-	// Option sets options such as instumenting the DB with logging.
-	Option interface {
-		apply(*options)
-	}
+import "io/fs"
 
-	// option wraps a function that modifies options into an implementation
-	// of the Option interface.
-	option struct {
-		f func(*options)
-	}
-)
-
-func newOption(f func(*options)) *option {
-	return &option{f: f}
-}
-
-func (o *option) apply(opts *options) {
-	o.f(opts)
-}
-
-// WithMigrator returns an Option that performs migrations for the DB.
-func WithMigrator(migrator Migrator) Option {
-	return newOption(func(opts *options) { opts.migrator = migrator })
+// Migrator provides a facility to validate and migrate the DB schema, given
+// the schema version and the source migration files.
+type Migrator interface {
+	Migrate(version int, source fs.FS, target DB) error
 }
