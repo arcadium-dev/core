@@ -18,7 +18,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/pkg/errors"
+	"arcadium.dev/core/errors"
 )
 
 func TestServerServeWithError(t *testing.T) {

@@ -22,10 +22,29 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+var (
+	// Unwrap is an alias for errors.Unwrap
+	Unwrap = errors.Unwrap
+
+	// Is is an alias for errors.Is
+	Is = errors.Is
+
+	// As is an alias for errors.As
+	As = errors.As
+)
+
 // New creates an error from the code and the message.
 func New(code codes.Code, msg string) error {
 	return &gerror{
 		error: errors.New(msg),
+		code:  code,
+	}
+}
+
+// WithCode annotates the given error with the code.
+func WithCode(err error, code codes.Code) error {
+	return &gerror{
+		error: err,
 		code:  code,
 	}
 }
@@ -58,24 +77,6 @@ func Wrap(e error, msg string) error {
 // If the given error is nil, Wrap returns nil.
 func Wrapf(e error, format string, a ...interface{}) error {
 	return Wrap(e, fmt.Sprintf(format, a...))
-}
-
-// Unwrap provides a local implementation of the standard errors
-// function to allow users to import a single errors package.
-func Unwrap(err error) error {
-	return errors.Unwrap(err)
-}
-
-// Is provides a local implementation of the standard errors
-// function to allow users to import a single errors package.
-func Is(err, target error) bool {
-	return errors.Is(err, target)
-}
-
-// As arovides a local implementation of the standard errors
-// function to allow users to import a single errors package.
-func As(err error, target interface{}) bool {
-	return errors.As(err, target)
 }
 
 type (

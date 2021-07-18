@@ -12,23 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sql // import "arcadium.dev/core/sql"
+package grpc // import "arcadium.dev/core/grpc"
+
+//go:generate mockgen -package mockgrpc -destination ./mock/config.go . Config
 
 import (
-	"database/sql"
+	"arcadium.dev/core/config"
 )
 
-func Open(config Config, opts ...Option) (DB, error) {
-	sqldb, err := sql.Open(config.DriverName(), config.DSN())
-	if err != nil {
-		return nil, err
-	}
-	var db DB = &sqlDB{DB: sqldb}
+// Config contains the information necessary to create a gRPC server
+type Config interface {
+	config.TLS
 
-	// Set options
-	o := &options{}
-	for _, opt := range opts {
-		opt.apply(o)
-	}
-	return db, nil
+	// Addr returns that network address the server listens to.
+	Addr() string
 }

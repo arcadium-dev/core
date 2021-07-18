@@ -17,8 +17,6 @@ package sql // import "arcadium.dev/core/sql"
 import (
 	"context"
 	"database/sql"
-
-	"github.com/pkg/errors"
 )
 
 // sqlDB
@@ -30,7 +28,7 @@ type sqlDB struct {
 func (db *sqlDB) Begin(ctx context.Context, opts *TxOptions) (Tx, error) {
 	tx, err := db.DB.BeginTx(ctx, opts)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return &sqlTx{Tx: tx}, nil
 }
@@ -38,7 +36,7 @@ func (db *sqlDB) Begin(ctx context.Context, opts *TxOptions) (Tx, error) {
 func (db *sqlDB) Exec(ctx context.Context, query string, args ...interface{}) (Result, error) {
 	result, err := db.DB.ExecContext(ctx, query, args...)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return result, nil
 }
@@ -46,7 +44,7 @@ func (db *sqlDB) Exec(ctx context.Context, query string, args ...interface{}) (R
 func (db *sqlDB) Prepare(ctx context.Context, query string) (Stmt, error) {
 	stmt, err := db.DB.PrepareContext(ctx, query)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return &sqlStmt{Stmt: stmt}, nil
 }
@@ -54,7 +52,7 @@ func (db *sqlDB) Prepare(ctx context.Context, query string) (Stmt, error) {
 func (db *sqlDB) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
 	rows, err := db.DB.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return rows, err
 }
@@ -64,11 +62,11 @@ func (db *sqlDB) QueryRow(ctx context.Context, query string, args ...interface{}
 }
 
 func (db *sqlDB) Close() error {
-	return errors.WithStack(db.DB.Close())
+	return db.DB.Close()
 }
 
 func (db *sqlDB) Ping(ctx context.Context) error {
-	return errors.WithStack(db.DB.PingContext(ctx))
+	return db.DB.PingContext(ctx)
 }
 
 // sqlStmt
@@ -80,7 +78,7 @@ type sqlStmt struct {
 func (stmt *sqlStmt) Exec(ctx context.Context, args ...interface{}) (Result, error) {
 	result, err := stmt.Stmt.ExecContext(ctx, args...)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return result, nil
 }
@@ -88,7 +86,7 @@ func (stmt *sqlStmt) Exec(ctx context.Context, args ...interface{}) (Result, err
 func (stmt *sqlStmt) Query(ctx context.Context, args ...interface{}) (*Rows, error) {
 	rows, err := stmt.Stmt.QueryContext(ctx, args...)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return rows, err
 }
@@ -98,7 +96,7 @@ func (stmt *sqlStmt) QueryRow(ctx context.Context, args ...interface{}) *Row {
 }
 
 func (stmt *sqlStmt) Close() error {
-	return errors.WithStack(stmt.Stmt.Close())
+	return stmt.Stmt.Close()
 }
 
 // sqlTx
@@ -110,7 +108,7 @@ type sqlTx struct {
 func (tx *sqlTx) Exec(ctx context.Context, query string, args ...interface{}) (Result, error) {
 	result, err := tx.Tx.ExecContext(ctx, query, args...)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return result, nil
 }
@@ -118,7 +116,7 @@ func (tx *sqlTx) Exec(ctx context.Context, query string, args ...interface{}) (R
 func (tx *sqlTx) Prepare(ctx context.Context, query string) (Stmt, error) {
 	stmt, err := tx.Tx.PrepareContext(ctx, query)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return &sqlStmt{Stmt: stmt}, nil
 }
@@ -126,7 +124,7 @@ func (tx *sqlTx) Prepare(ctx context.Context, query string) (Stmt, error) {
 func (tx *sqlTx) Query(ctx context.Context, query string, args ...interface{}) (*Rows, error) {
 	rows, err := tx.Tx.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return rows, err
 }
@@ -136,11 +134,11 @@ func (tx *sqlTx) QueryRow(ctx context.Context, query string, args ...interface{}
 }
 
 func (tx *sqlTx) Commit() error {
-	return errors.WithStack(tx.Tx.Commit())
+	return tx.Tx.Commit()
 }
 
 func (tx *sqlTx) Rollback() error {
-	return errors.WithStack(tx.Tx.Rollback())
+	return tx.Tx.Rollback()
 }
 
 func (tx *sqlTx) Stmt(ctx context.Context, stmt Stmt) Stmt {

@@ -19,7 +19,8 @@ import (
 
 	"arcadium.dev/core/config"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/pkg/errors"
+
+	"arcadium.dev/core/errors"
 )
 
 const (
