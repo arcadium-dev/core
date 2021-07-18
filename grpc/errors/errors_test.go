@@ -21,67 +21,127 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func TestGameError(t *testing.T) {
-	// Test Errorf()
-	err := Errorf(codes.Unimplemented, "%s%s", "foo", "bar")
-	if err.Error() != "foobar" {
-		t.Errorf("unexpected error: %+v", err)
-	}
+type testError string
 
-	code := status.Code(err)
-	if code != codes.Unimplemented {
-		t.Errorf("unexpected code: %s", code)
-	}
+func (e testError) Error() string { return string(e) }
 
-	// Test wrapping a nil error
-	err = Wrapf(nil, "%s", "Player ID")
+func TestError(t *testing.T) {
+	t.Parallel()
 
-	if err != nil {
-		t.Errorf("unexpected wrapped nil error: %s", err)
-	}
+	t.Run("Test New", func(t *testing.T) {
+		t.Parallel()
 
-	// Test wrapping a valid error
-	err = Wrapf(InvalidArgument, "%s", "Player ID")
+		err := New(codes.Unknown, "test error")
+		if err.Error() != "test error" {
+			t.Errorf("Unexpected error: %s", err)
+		}
+		code := status.Code(err)
+		if code != codes.Unknown {
+			t.Errorf("Unexpected code: %s", code)
+		}
+	})
 
-	// Test Error()
-	msg := err.Error()
-	if msg != "InvalidArgument: Player ID" {
-		t.Errorf("unexpected error message: %s", msg)
-	}
+	t.Run("Test WithCode", func(t *testing.T) {
+		t.Parallel()
 
-	// Test Unwrap()
-	base := Unwrap(err)
-	if base != InvalidArgument {
-		t.Errorf("unexpected unwrapped error: %s", base)
-	}
+		err := WithCode(testError("test error"), codes.Unimplemented)
+		if err.Error() != "test error" {
+			t.Errorf("Unexpected error: %s", err)
+		}
+		code := status.Code(err)
+		if code != codes.Unimplemented {
+			t.Errorf("Unexpected code: %s", code)
+		}
+	})
 
-	// Test Is()
-	if !Is(err, InvalidArgument) {
-		t.Error("should be an invalid player id error")
-	}
+	t.Run("Test Errorf", func(t *testing.T) {
+		t.Parallel()
 
-	// Test As()
-	var e *gerror
-	if !As(err, &e) {
-		t.Error("should be a game error")
-	}
-	if e != err {
-		t.Error("should be an invalid player id error")
-	}
+		err := Errorf(codes.NotFound, "%s %s", "test", "error")
+		if err.Error() != "test error" {
+			t.Errorf("Unexpected err: %s", err)
+		}
+		code := status.Code(err)
+		if code != codes.NotFound {
+			t.Errorf("Unexpected code: %s", code)
+		}
+	})
 
-	// Test GRPCStatus()
-	_, ok := status.FromError(err)
-	if !ok {
-		t.Error("failed type assertion")
-	}
+	t.Run("Test Wrap", func(t *testing.T) {
+		t.Parallel()
 
-	code = status.Code(err)
-	if code != codes.InvalidArgument {
-		t.Errorf("unexpected code: %s", code)
-	}
+		err := Wrap(nil, "test error")
+		if err != nil {
+			t.Errorf("Unexpected err: %s", err)
+		}
+	})
+
+	t.Run("Test Wrapf", func(t *testing.T) {
+		t.Parallel()
+
+		err := Wrapf(InvalidArgument, "test error")
+		if err.Error() != "InvalidArgument: test error" {
+			t.Errorf("Unexpected err: %s", err)
+		}
+		code := status.Code(err)
+		if code != codes.InvalidArgument {
+			t.Errorf("Unexpected code: %s", code)
+		}
+	})
+
+	t.Run("Test Unwrap", func(t *testing.T) {
+		t.Parallel()
+
+		err := Unwrap(Wrap(AlreadyExists, "wrapped"))
+		if err.Error() != "AlreadyExists" {
+			t.Errorf("Unexpected err: %s", err)
+		}
+		code := status.Code(err)
+		if code != codes.AlreadyExists {
+			t.Errorf("Unexpected code: %s", code)
+		}
+	})
+
+	t.Run("Test Is", func(t *testing.T) {
+		t.Parallel()
+
+		err := Wrap(Internal, "wrapped")
+		if !Is(err, Internal) {
+			t.Errorf("Unexpected err: %s", err)
+		}
+	})
+
+	t.Run("Test As", func(t *testing.T) {
+		t.Parallel()
+
+		var e testError
+		err := Wrapf(testError("foo bar"), "wrapped")
+		if !As(err, &e) {
+			t.Errorf("Unexpected err: %s %s", err, e)
+		}
+		if e.Error() != "foo bar" {
+			t.Errorf("Unexpected err: %s", e)
+		}
+	})
+
+	t.Run("Test GRPCStatus", func(t *testing.T) {
+		t.Parallel()
+
+		_, ok := status.FromError(InvalidArgument)
+		if !ok {
+			t.Error("failed type assertion")
+		}
+
+		code := status.Code(InvalidArgument)
+		if code != codes.InvalidArgument {
+			t.Errorf("unexpected code: %s", code)
+		}
+	})
 }
 
-func TestGameBaseErrors(t *testing.T) {
+func TestSentinelErrors(t *testing.T) {
+	t.Parallel()
+
 	var table = []struct {
 		err  error
 		code codes.Code

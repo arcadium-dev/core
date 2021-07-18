@@ -12,40 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package http
+package grpc // import "arcadium.dev/core/grpc"
+
+//go:generate mockgen -package mockgrpc -destination ./mock/config.go . Config
 
 import (
-	"crypto/tls"
-	"net/http"
-	"testing"
-
-	"github.com/golang/mock/gomock"
-
-	mocklog "arcadium.dev/core/log/mock"
+	"arcadium.dev/core/config"
 )
 
-func TestServerWithTLS(t *testing.T) {
-	s := &Server{
-		server: &http.Server{},
-	}
-	cfg := &tls.Config{}
-	WithTLS(cfg).apply(s)
+// Config contains the information necessary to create a gRPC server
+type Config interface {
+	config.TLS
 
-	if s.server.TLSConfig == nil {
-		t.Error("failed to set TLSConfig")
-	}
-}
-
-func TestServerWithLogger(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockLogger := mocklog.NewMockLogger(ctrl)
-
-	s := &Server{}
-
-	WithLogger(mockLogger).apply(s)
-
-	if s.logger != mockLogger {
-		t.Error("failed to set logger")
-	}
+	// Addr returns that network address the server listens to.
+	Addr() string
 }

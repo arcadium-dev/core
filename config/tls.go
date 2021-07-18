@@ -12,24 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server // import "arcadium.dev/core/server"
+package config // import "arcadium.dev/core/config"
 
-//go:generate mockgen -package mockserver -destination ./mock/config.go . Config
+//go:generate mockgen -package mockconfig -destination ./mock/tls.go . TLS
 
 import (
 	"crypto/tls"
 	"crypto/x509"
 	"os"
 
-	"github.com/pkg/errors"
+	"arcadium.dev/core/errors"
 )
 
-// Config contains the information necessary to create a server.
-type Config interface {
-
-	// Addr returns that network address the server listens to.
-	Addr() string
-
+// TLS contains the information necessary to create a tls.Config.
+type TLS interface {
 	// Cert returns the file name of the PEM encoded public key.
 	Cert() string
 
@@ -40,10 +36,10 @@ type Config interface {
 	CACert() string
 }
 
-// CreateTLSConfig will create a tls.Config given the config and options. This will
+// NewTLS will create a tls.Config given the config and options. This will
 // return an error if there is a problem loading the required certificate files.
 // If the WithMTLS option is specified, a client CA cert is required.
-func CreateTLSConfig(config Config, opts ...TLSConfigOption) (*tls.Config, error) {
+func NewTLS(config TLS, opts ...TLSOption) (*tls.Config, error) {
 	cfg := &tls.Config{}
 	for _, opt := range opts {
 		opt.apply(cfg)
@@ -58,13 +54,9 @@ func CreateTLSConfig(config Config, opts ...TLSConfigOption) (*tls.Config, error
 
 	// If we are doing mTLS...
 	if cfg.ClientAuth == tls.RequireAndVerifyClientCert {
-		file := config.CACert()
-		if file == "" {
-			return nil, errors.New("A client CA certification must be configured for mTLS.")
-		}
 		// ... create a CA certificate pool and add client's CA cert to it.
 		cfg.ClientCAs = x509.NewCertPool()
-		caCert, err := os.ReadFile(file)
+		caCert, err := os.ReadFile(config.CACert())
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to load the client CA certificate")
 		}
@@ -75,27 +67,27 @@ func CreateTLSConfig(config Config, opts ...TLSConfigOption) (*tls.Config, error
 }
 
 // WithMTLS will setup the tls.Config to require and verify client connections.
-func WithMTLS() TLSConfigOption {
-	return newTLSConfigOption(func(cfg *tls.Config) {
+func WithMTLS() TLSOption {
+	return newTLSOption(func(cfg *tls.Config) {
 		cfg.ClientAuth = tls.RequireAndVerifyClientCert
 	})
 }
 
 type (
-	// TLSConfigOption provides options for configuring the creation of a tls.Config.
-	TLSConfigOption interface {
+	// TLSOption provides options for configuring the creation of a tls.Config.
+	TLSOption interface {
 		apply(*tls.Config)
 	}
 
-	tlsConfigOption struct {
+	tlsOption struct {
 		f func(*tls.Config)
 	}
 )
 
-func newTLSConfigOption(f func(*tls.Config)) tlsConfigOption {
-	return tlsConfigOption{f: f}
+func newTLSOption(f func(*tls.Config)) tlsOption {
+	return tlsOption{f: f}
 }
 
-func (o tlsConfigOption) apply(cfg *tls.Config) {
+func (o tlsOption) apply(cfg *tls.Config) {
 	o.f(cfg)
 }

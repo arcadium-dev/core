@@ -14,8 +14,6 @@
 
 package http // import "arcadium.dev/core/server/http"
 
-//go:generate mockgen -package mockhttp -destination ./mock/server.go . Server
-
 import (
 	"context"
 	"net"
@@ -24,18 +22,10 @@ import (
 
 	"arcadium.dev/core/errors"
 	"arcadium.dev/core/log"
-	"arcadium.dev/core/server"
 )
 
 type (
-
-	// Server is an HTTP server to serve HTTP requests.
-	Server interface {
-		server.Server            // Implements Serve and Stop
-		Handle(mux http.Handler) // Handle the given mux.
-	}
-
-	HTTPServer struct {
+	Server struct {
 		addr   string
 		logger log.Logger
 
@@ -45,9 +35,9 @@ type (
 )
 
 // New creates an HTTP server with a default handler and has not started to accept requests yet.
-func New(config server.Config, opts ...Option) (*HTTPServer, error) {
-	s := &HTTPServer{
-		addr:   config.Addr(),
+func New(cfg Config, opts ...Option) (*Server, error) {
+	s := &Server{
+		addr:   cfg.Addr(),
 		logger: log.NewNullLogger(),
 		server: &http.Server{},
 	}
@@ -74,7 +64,7 @@ func New(config server.Config, opts ...Option) (*HTTPServer, error) {
 
 // Serve accepts incoming connections, creating a new service goroutine for each. The
 // service goroutine reads requests and then call the handler to reply to them.
-func (s *HTTPServer) Serve(result chan<- error) {
+func (s *Server) Serve(result chan<- error) {
 	s.logger.Info("serving")
 	defer s.logger.Info("serving complete")
 
@@ -98,7 +88,7 @@ func (s *HTTPServer) Serve(result chan<- error) {
 }
 
 // Stop shuts down the http server gracefully without interrupting an active connections.
-func (s *HTTPServer) Stop() {
+func (s *Server) Stop() {
 	// TODO: Do we want to make the shutdown timeout configurable?
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 	defer cancel()
@@ -111,7 +101,7 @@ func (s *HTTPServer) Stop() {
 }
 
 // Handle associates the given handler with the server.
-func (s *HTTPServer) Handle(mux http.Handler) {
+func (s *Server) Handle(mux http.Handler) {
 	// Don't overwrite the existing handler if mux is nil.
 	if mux == nil {
 		return
