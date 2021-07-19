@@ -21,21 +21,21 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	mockserver "arcadium.dev/core/server/mock"
+	mockgrpc "arcadium.dev/core/grpc/mock"
 )
 
-func sharedNewTest(t *testing.T, setup func(*mockserver.MockConfig), check func(*Server, error), opts ...Option) {
+func sharedNewTest(t *testing.T, setup func(*mockgrpc.MockConfig), check func(*Server, error), opts ...Option) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockConfig := mockserver.NewMockConfig(ctrl)
+	mockConfig := mockgrpc.NewMockConfig(ctrl)
 	setup(mockConfig)
 	check(New(mockConfig, opts...))
 }
 
 func TestServerNewSecure01(t *testing.T) {
 	sharedNewTest(t,
-		func(mockConfig *mockserver.MockConfig) {
+		func(mockConfig *mockgrpc.MockConfig) {
 			mockConfig.EXPECT().Cert().Return("../insecure/cert.pem")
 			mockConfig.EXPECT().Key().Return("")
 		},
@@ -53,7 +53,7 @@ func TestServerNewSecure01(t *testing.T) {
 
 func TestServerNewSecure02(t *testing.T) {
 	sharedNewTest(t,
-		func(mockConfig *mockserver.MockConfig) {
+		func(mockConfig *mockgrpc.MockConfig) {
 			mockConfig.EXPECT().Cert().Return("")
 		},
 		func(s *Server, err error) {
@@ -70,7 +70,7 @@ func TestServerNewSecure02(t *testing.T) {
 
 func TestServerNewTLS(t *testing.T) {
 	sharedNewTest(t,
-		func(mockConfig *mockserver.MockConfig) {
+		func(mockConfig *mockgrpc.MockConfig) {
 			mockConfig.EXPECT().Cert().Return("../insecure/cert.pem").Times(2)
 			mockConfig.EXPECT().Key().Return("../insecure/key.pem").Times(2)
 			mockConfig.EXPECT().CACert().Return("../insecure/rootCA.pem")
@@ -86,7 +86,7 @@ func TestServerNewTLS(t *testing.T) {
 
 func TestServerNewInsecure(t *testing.T) {
 	sharedNewTest(t,
-		func(mockConfig *mockserver.MockConfig) {
+		func(mockConfig *mockgrpc.MockConfig) {
 			mockConfig.EXPECT().Addr().Return(":4201")
 		},
 		func(s *Server, err error) {
@@ -98,11 +98,11 @@ func TestServerNewInsecure(t *testing.T) {
 	)
 }
 
-func sharedServeTest(t *testing.T, setup func(*mockserver.MockConfig), check func(*Server, chan error)) {
+func sharedServeTest(t *testing.T, setup func(*mockgrpc.MockConfig), check func(*Server, chan error)) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockConfig := mockserver.NewMockConfig(ctrl)
+	mockConfig := mockgrpc.NewMockConfig(ctrl)
 	setup(mockConfig)
 
 	s, _ := New(mockConfig, WithInsecure())
@@ -115,7 +115,7 @@ func sharedServeTest(t *testing.T, setup func(*mockserver.MockConfig), check fun
 
 func TestServerServeBadAddr(t *testing.T) {
 	sharedServeTest(t,
-		func(mockConfig *mockserver.MockConfig) {
+		func(mockConfig *mockgrpc.MockConfig) {
 			mockConfig.EXPECT().Addr().Return(":-1")
 		},
 		func(s *Server, result chan error) {
@@ -131,7 +131,7 @@ func TestServerServeBadAddr(t *testing.T) {
 
 func TestServerServeStop(t *testing.T) {
 	sharedServeTest(t,
-		func(mockConfig *mockserver.MockConfig) {
+		func(mockConfig *mockgrpc.MockConfig) {
 			mockConfig.EXPECT().Addr().Return(":4201")
 		},
 		func(s *Server, result chan error) {
