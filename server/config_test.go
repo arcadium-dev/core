@@ -20,14 +20,14 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"arcadium.dev/core/grpc"
 	mockgrpc "arcadium.dev/core/grpc/mock"
-	"arcadium.dev/core/http"
 	mockhttp "arcadium.dev/core/http/mock"
 	mocklog "arcadium.dev/core/log/mock"
 	mocksql "arcadium.dev/core/sql/mock"
 
 	"arcadium.dev/core/config"
+	"arcadium.dev/core/grpc"
+	"arcadium.dev/core/http"
 	"arcadium.dev/core/log"
 	"arcadium.dev/core/sql"
 )
@@ -75,7 +75,7 @@ func TestNewServerConfigSuccess(t *testing.T) {
 	}
 }
 
-func createConfig(t *testing.T, c interface{}) (*Config, error) {
+func createConfig(t *testing.T, cfgFuncs ...interface{}) (*Config, error) {
 	t.Helper()
 
 	ctor := ConfigConstructors{
@@ -84,17 +84,19 @@ func createConfig(t *testing.T, c interface{}) (*Config, error) {
 		NewGRPCServerConfig: func(opts ...config.Option) (grpc.Config, error) { return nil, nil },
 		NewHTTPServerConfig: func(opts ...config.Option) (http.Config, error) { return nil, nil },
 	}
-	switch f := c.(type) {
-	case func(opts ...config.Option) (log.Config, error):
-		ctor.NewLoggerConfig = f
-	case func(opts ...config.Option) (sql.Config, error):
-		ctor.NewDBConfig = f
-	case func(opts ...config.Option) (grpc.Config, error):
-		ctor.NewGRPCServerConfig = f
-	case func(opts ...config.Option) (http.Config, error):
-		ctor.NewHTTPServerConfig = f
-	default:
-		t.Errorf("Unexpected cfgCtor")
+	for _, cfgFunc := range cfgFuncs {
+		switch f := cfgFunc.(type) {
+		case func(opts ...config.Option) (log.Config, error):
+			ctor.NewLoggerConfig = f
+		case func(opts ...config.Option) (sql.Config, error):
+			ctor.NewDBConfig = f
+		case func(opts ...config.Option) (grpc.Config, error):
+			ctor.NewGRPCServerConfig = f
+		case func(opts ...config.Option) (http.Config, error):
+			ctor.NewHTTPServerConfig = f
+		default:
+			t.Errorf("Unexpected cfgCtor")
+		}
 	}
 	return NewConfig(ctor)
 }
