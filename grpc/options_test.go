@@ -24,7 +24,7 @@ import (
 )
 
 func TestGRPCWithoutReflection(t *testing.T) {
-	s := &GRPCServer{reflection: true}
+	s := &Server{reflection: true}
 	WithoutReflection().apply(s)
 
 	if s.reflection != false || s.insecure != false || s.metrics != false ||
@@ -34,7 +34,7 @@ func TestGRPCWithoutReflection(t *testing.T) {
 }
 
 func TestGRPCWithInsecure(t *testing.T) {
-	s := &GRPCServer{reflection: true}
+	s := &Server{reflection: true}
 	WithInsecure().apply(s)
 
 	if s.reflection != true || s.insecure != true || s.metrics != false ||
@@ -44,7 +44,7 @@ func TestGRPCWithInsecure(t *testing.T) {
 }
 
 func TestGRPCWithMetrics(t *testing.T) {
-	s := &GRPCServer{reflection: true}
+	s := &Server{reflection: true}
 	WithMetrics().apply(s)
 
 	if s.reflection != true || s.insecure != false || s.metrics != true ||
@@ -59,7 +59,7 @@ func TestGRPCWithLogger(t *testing.T) {
 
 	mockLogger := mocklog.NewMockLogger(ctrl)
 
-	s := &GRPCServer{reflection: true}
+	s := &Server{reflection: true}
 	WithLogger(mockLogger).apply(s)
 
 	if s.reflection != true || s.insecure != false || s.metrics != false ||
@@ -74,7 +74,7 @@ func TestGRPCWithTracer(t *testing.T) {
 
 	mockTracer := mocktrace.NewMockTracer(ctrl)
 
-	s := &GRPCServer{reflection: true}
+	s := &Server{reflection: true}
 	WithTracer(mockTracer).apply(s)
 
 	if s.reflection != true || s.insecure != false || s.metrics != false ||

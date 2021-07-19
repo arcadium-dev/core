@@ -24,8 +24,8 @@ import (
 	mocklog "arcadium.dev/core/log/mock"
 )
 
-func TestHTTPServerWithTLS(t *testing.T) {
-	s := &HTTPServer{
+func TestServerWithTLS(t *testing.T) {
+	s := &Server{
 		server: &http.Server{},
 	}
 	cfg := &tls.Config{}
@@ -36,12 +36,12 @@ func TestHTTPServerWithTLS(t *testing.T) {
 	}
 }
 
-func TestHTTPServerWithLogger(t *testing.T) {
+func TestServerWithLogger(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockLogger := mocklog.NewMockLogger(ctrl)
 
-	s := &HTTPServer{}
+	s := &Server{}
 
 	WithLogger(mockLogger).apply(s)
 

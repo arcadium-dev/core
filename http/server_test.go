@@ -22,20 +22,20 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"arcadium.dev/core/server"
-	mockserver "arcadium.dev/core/server/mock"
+	"arcadium.dev/core/config"
+	mockhttp "arcadium.dev/core/http/mock"
 )
 
-func TestHTTPServerNewWithTLS(t *testing.T) {
+func TestServerNewWithTLS(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ctrl.Finish()
 
-	mockConfig := mockserver.NewMockConfig(ctrl)
+	mockConfig := mockhttp.NewMockConfig(ctrl)
 	mockConfig.EXPECT().Addr().Return(":8080")
-	mockConfig.EXPECT().Cert().Return("../test_data/cert.pem")
-	mockConfig.EXPECT().Key().Return("../test_data/key.pem")
+	mockConfig.EXPECT().Cert().Return("../insecure/cert.pem")
+	mockConfig.EXPECT().Key().Return("../insecure/key.pem")
 
-	tlsConfig, tlsErr := server.CreateTLSConfig(mockConfig)
+	tlsConfig, tlsErr := config.NewTLS(mockConfig)
 	if tlsErr != nil {
 		t.Errorf("received tls error: %s", tlsErr)
 	}
@@ -57,7 +57,7 @@ func TestHttpServerNewWithoutTLS(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ctrl.Finish()
 
-	mockConfig := mockserver.NewMockConfig(ctrl)
+	mockConfig := mockhttp.NewMockConfig(ctrl)
 	mockConfig.EXPECT().Addr().Return(":8080")
 
 	s, err := New(mockConfig)
@@ -77,7 +77,7 @@ func TestHttpServerHandleMux(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ctrl.Finish()
 
-	mockConfig := mockserver.NewMockConfig(ctrl)
+	mockConfig := mockhttp.NewMockConfig(ctrl)
 	mockConfig.EXPECT().Addr().Return(":8080")
 
 	s, _ := New(mockConfig)
@@ -95,7 +95,7 @@ func TestHttpServerServeBadAddr(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ctrl.Finish()
 
-	mockConfig := mockserver.NewMockConfig(ctrl)
+	mockConfig := mockhttp.NewMockConfig(ctrl)
 	mockConfig.EXPECT().Addr().Return(":-1")
 
 	s, _ := New(mockConfig)
@@ -108,9 +108,9 @@ func TestHttpServerServeBadAddr(t *testing.T) {
 		t.Error("expecting an error")
 	}
 
-	expectedErr := "Failed to listen on :-1: listen tcp: address -1: invalid port"
+	expectedErr := "listen tcp: address -1: invalid port: Failed to listen on :-1"
 	if err.Error() != expectedErr {
-		t.Errorf("expected error: %s, actual %s", expectedErr, err.Error())
+		t.Errorf("\nexpected error: %s\nactual   %s", expectedErr, err.Error())
 	}
 }
 
@@ -118,7 +118,7 @@ func TestHttpServerServeStop(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ctrl.Finish()
 
-	mockConfig := mockserver.NewMockConfig(ctrl)
+	mockConfig := mockhttp.NewMockConfig(ctrl)
 	mockConfig.EXPECT().Addr().Return(":8080")
 
 	s, _ := New(mockConfig)
