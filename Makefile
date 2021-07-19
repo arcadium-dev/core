@@ -28,7 +28,6 @@ install_mockgen:
 .PHONY: install_mockgen
 
 install: install_mockgen
-
 .PHONY: install
 
 # ----
@@ -57,8 +56,10 @@ lint: fmt tidy generate
 
 # ----
 
-test:
+unit_test:
 	@printf "\nRunning go test...\n"
 	@go test -cover $$(go list ./... | grep -v /mock)
 .PHONY: test
 
+test: unit_test
+.PHONY: TEST

@@ -40,6 +40,8 @@ import (
 //---- New ----
 
 func TestNewSuccess(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -203,21 +205,21 @@ func createServer(t *testing.T, newFuncs ...interface{}) (*Server, error) {
 // ---- Serve ----
 
 func TestServeSuccess(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	s := setupServer(t, ctrl,
 		func(config grpc.Config, opts ...grpc.Option) (GRPCServer, error) {
-			opts = append(opts, grpc.WithInsecure())
-			return grpc.New(config, opts...)
+			return mockGRPCServer{sleep: 500}, nil
 		},
 		func(config http.Config, opts ...http.Option) (HTTPServer, error) {
-			return http.New(config, opts...)
+			return mockHTTPServer{sleep: 500}, nil
 		},
-		true,
 	)
 
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(500*time.Millisecond))
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(250*time.Millisecond))
 	defer cancel()
 
 	err := s.Serve(ctx)
@@ -244,7 +246,6 @@ func TestServerError(t *testing.T) {
 			func(config http.Config, opts ...http.Option) (HTTPServer, error) {
 				return mockHTTPServer{sleep: 500}, nil
 			},
-			false,
 		)
 
 		err := s.Serve(context.Background())
@@ -267,7 +268,6 @@ func TestServerError(t *testing.T) {
 			func(config http.Config, opts ...http.Option) (HTTPServer, error) {
 				return mockHTTPServer{err: errors.New(expectedErr)}, nil
 			},
-			false,
 		)
 
 		err := s.Serve(context.Background())
@@ -291,7 +291,6 @@ func TestServerError(t *testing.T) {
 			func(config http.Config, opts ...http.Option) (HTTPServer, error) {
 				return mockHTTPServer{err: errors.New(expectedHTTPErr)}, nil
 			},
-			false,
 		)
 
 		err := s.Serve(context.Background())
@@ -310,7 +309,7 @@ type (
 	httpServerCtor func(config http.Config, opts ...http.Option) (HTTPServer, error)
 )
 
-func setupServer(t *testing.T, ctrl *gomock.Controller, newGRPCServer grpcServerCtor, newHTTPServer httpServerCtor, realServers bool) *Server {
+func setupServer(t *testing.T, ctrl *gomock.Controller, newGRPCServer grpcServerCtor, newHTTPServer httpServerCtor) *Server {
 	t.Helper()
 
 	mockDB := mocksql.NewMockDB(ctrl)
@@ -333,11 +332,6 @@ func setupServer(t *testing.T, ctrl *gomock.Controller, newGRPCServer grpcServer
 		NewDB:         func(sql.Config, ...sql.Option) (sql.DB, error) { return mockDB, nil },
 		NewGRPCServer: newGRPCServer,
 		NewHTTPServer: newHTTPServer,
-	}
-
-	if realServers {
-		mockGRPCServerConfig.EXPECT().Addr().Return(":4201")
-		mockHTTPServerConfig.EXPECT().Addr().Return(":8080")
 	}
 
 	mockDB.EXPECT().Close().Return(nil)
