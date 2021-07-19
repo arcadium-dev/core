@@ -135,10 +135,7 @@ func (s *Server) Serve(ctx context.Context) error {
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 
 	result := make(chan error, 1)
-	return s.serve(ctx, sig, result)
-}
 
-func (s *Server) serve(ctx context.Context, sig chan os.Signal, result chan error) error {
 	go func(result chan<- error) {
 		var grpcErr error
 		grpcResult := make(chan error)
