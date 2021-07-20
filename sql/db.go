@@ -30,5 +30,12 @@ func Open(config Config, opts ...Option) (DB, error) {
 	for _, opt := range opts {
 		opt.apply(o)
 	}
+
+	// If there is a migration, run it against the sql db.
+	if o.migration != nil {
+		if err := o.migration(sqldb); err != nil {
+			return nil, err
+		}
+	}
 	return db, nil
 }

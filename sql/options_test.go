@@ -15,36 +15,32 @@
 package sql
 
 import (
-	"io/fs"
+	"database/sql"
 	"testing"
 )
 
-func TestOptionsWithMigrator(t *testing.T) {
+func TestOptionsWithMigration(t *testing.T) {
 	t.Parallel()
 
-	t.Run("WithMigrator with nil migrator", func(t *testing.T) {
+	t.Run("WithMigration with nil migration", func(t *testing.T) {
 		t.Parallel()
 
 		var opts options
-		WithMigrator(nil).apply(&opts)
-		if opts.migrator != nil {
-			t.Errorf("Unexpected migrator: %+v", opts.migrator)
+		WithMigration(nil).apply(&opts)
+		if opts.migration != nil {
+			t.Errorf("Unexpected migration: %+v", opts.migration)
 		}
 	})
 
-	t.Run("WithMigrator with valid migrator", func(t *testing.T) {
+	t.Run("WithMigration with valid migration", func(t *testing.T) {
 		t.Parallel()
 
-		m := &mockMigrator{}
-
 		var opts options
-		WithMigrator(m).apply(&opts)
-		if opts.migrator != m {
-			t.Errorf("Unexpected migrator: %+v", opts.migrator)
+		WithMigration(testMigration).apply(&opts)
+		if opts.migration == nil {
+			t.Error("Expected migration")
 		}
 	})
 }
 
-type mockMigrator struct{}
-
-func (m mockMigrator) Migrate(int, fs.FS, DB) error { return nil }
+func testMigration(*sql.DB) error { return nil }

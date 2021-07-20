@@ -14,12 +14,9 @@
 
 package sql // import "arcadium.dev/core/sql"
 
-//go:generate mockgen -package mocksql -destination ./mock/migrator.go . Migrator
+import (
+	"database/sql"
+)
 
-import "io/fs"
-
-// Migrator provides a facility to validate and migrate the DB schema, given
-// the schema version and the source migration files.
-type Migrator interface {
-	Migrate(version int, source fs.FS, target DB) error
-}
+// Migration defines a function to validate and migrate the DB schema.
+type Migration func(*sql.DB) error

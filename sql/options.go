@@ -16,7 +16,7 @@ package sql // import "arcadium.dev/core/sql"
 
 type (
 	options struct {
-		migrator Migrator
+		migration Migration
 	}
 
 	// Option sets options such as instumenting the DB with logging.
@@ -39,7 +39,7 @@ func (o *option) apply(opts *options) {
 	o.f(opts)
 }
 
-// WithMigrator returns an Option that performs migrations for the DB.
-func WithMigrator(migrator Migrator) Option {
-	return newOption(func(opts *options) { opts.migrator = migrator })
+// WithMigration returns an Option that performs a migration against the DB.
+func WithMigration(migration Migration) Option {
+	return newOption(func(opts *options) { opts.migration = migration })
 }
