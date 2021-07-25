@@ -106,19 +106,19 @@ func (e *gerror) GRPCStatus() *status.Status {
 var (
 	// Base errors
 
-	// ErrUnknown indicates an unknown error.
+	// Unknown indicates an unknown error.
 	Unknown = New(codes.Unknown, codes.Unknown.String())
 
-	// ErrInvalidArgument indicates missing or malformed field in a request.
+	// InvalidArgument indicates missing or malformed field in a request.
 	InvalidArgument = New(codes.InvalidArgument, codes.InvalidArgument.String())
 
-	// ErrNotFound indicates that the requested resource does not exist.
+	// NotFound indicates that the requested resource does not exist.
 	NotFound = New(codes.NotFound, codes.NotFound.String())
 
-	// ErrAlreadyExists indicates that the request to be created already exits.
+	// AlreadyExists indicates that the request to be created already exits.
 	AlreadyExists = New(codes.AlreadyExists, codes.AlreadyExists.String())
 
-	// ErrUnimplemented indicates the requested service has not been implemented.
+	// Unimplemented indicates the requested service has not been implemented.
 	Unimplemented = New(codes.Unimplemented, codes.Unimplemented.String())
 
 	// Internal indicates an internal errors.

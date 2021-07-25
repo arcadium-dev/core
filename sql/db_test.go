@@ -12,30 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sql // import "arcadium.dev/core/sql"
+package sql
 
 import (
-	"database/sql"
+	"testing"
 )
 
-func Open(config Config, opts ...Option) (DB, error) {
-	sqldb, err := sql.Open(config.DriverName(), config.DSN())
-	if err != nil {
-		return nil, err
-	}
-	var db DB = &sqlDB{DB: sqldb}
-
-	// Set options
-	o := &options{}
-	for _, opt := range opts {
-		opt.apply(o)
-	}
-
-	// If there is a migration, run it against the sql db.
-	if o.migration != nil {
-		if err := o.migration(sqldb); err != nil {
-			return nil, err
-		}
-	}
-	return db, nil
+func TestOpen(t *testing.T) {
 }

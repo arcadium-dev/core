@@ -14,32 +14,9 @@
 
 package sql // import "arcadium.dev/core/sql"
 
-type (
-	options struct {
-		migration Migration
-	}
-
-	// Option sets options such as instumenting the DB with logging.
-	Option interface {
-		apply(*options)
-	}
-
-	// option wraps a function that modifies options into an implementation
-	// of the Option interface.
-	option struct {
-		f func(*options)
-	}
+import (
+	"database/sql"
 )
 
-func newOption(f func(*options)) *option {
-	return &option{f: f}
-}
-
-func (o *option) apply(opts *options) {
-	o.f(opts)
-}
-
-// WithMigration returns an Option that performs a migration against the DB.
-func WithMigration(migration Migration) Option {
-	return newOption(func(opts *options) { opts.migration = migration })
-}
+// Migration defines a function to validate and migrate the DB schema.
+type Migration func(*sql.DB) error

@@ -14,13 +14,11 @@
 
 package sql // import "arcadium.dev/core/sql"
 
-//go:generate mockgen -package mocksql -destination ./mock/sql.go . DB,Stmt,Tx
+//go:generate mockgen -package mocksql -destination ./mock/interface.go . DB,Stmt,Tx
 
 import (
 	"context"
 	"database/sql"
-
-	"arcadium.dev/core/log"
 )
 
 type Result = sql.Result
@@ -59,15 +57,3 @@ type Tx interface {
 
 	Stmt(ctx context.Context, stmt Stmt) Stmt
 }
-
-/*
-	What I would like:
-
-	type Logger[L any] interface {
-		WithField(key string, value interface{}) L
-
-		Infoln(args ...interface{})
-		Infof(format string, args ...interface{})
-	}
-*/
-type Logger = log.Logger

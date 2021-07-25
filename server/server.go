@@ -101,7 +101,7 @@ func New(info build.Information, c ServerConstructors) (*Server, error) {
 
 	logger := c.NewLogger(cfg.Logger())
 
-	db, err := c.NewDB(cfg.DB(), sql.WithLogger(logger))
+	db, err := c.NewDB(cfg.DB())
 	if err != nil {
 		return nil, err
 	}
