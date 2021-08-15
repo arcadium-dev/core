@@ -19,7 +19,12 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 
+	"arcadium.dev/core/config"
 	"arcadium.dev/core/errors"
+)
+
+const (
+	postgresPrefix = "postgres"
 )
 
 type (
@@ -42,7 +47,13 @@ type (
 )
 
 // NewPostgres returns the postgres configuration.
-func NewPostgres() (*Postgres, error) {
+func NewPostgres(opts ...config.Option) (*Postgres, error) {
+	o := &config.Options{}
+	for _, opt := range opts {
+		opt.Apply(o)
+	}
+	prefix := o.Prefix() + postgresPrefix
+
 	config := struct {
 		DB             string `required:"true"`
 		User           string
@@ -58,7 +69,7 @@ func NewPostgres() (*Postgres, error) {
 		Format         string
 		ConnectTimeout string `split_words:"true"`
 	}{}
-	if err := envconfig.Process("postgres", &config); err != nil {
+	if err := envconfig.Process(prefix, &config); err != nil {
 		return nil, errors.Wrap(err, "failed to load postgres configuration")
 	}
 	return &Postgres{
@@ -71,7 +82,7 @@ func NewPostgres() (*Postgres, error) {
 		sslCert:        config.SSLCert,
 		sslKey:         config.SSLKey,
 		sslRootCert:    config.SSLRootCert,
-		connectTimeout: config, Timeout,
+		connectTimeout: config.ConnectTimeout,
 	}, nil
 }
 
@@ -81,37 +92,37 @@ func NewPostgres() (*Postgres, error) {
 func (p *Postgres) DSN() string {
 	// Build the url
 	u := &url.URL{Scheme: "postgres"}
-	if p.DB != "" {
-		u.Path = p.DB
+	if p.db != "" {
+		u.Path = p.db
 	}
-	if p.User != "" {
-		u.User = url.UserPassword(p.User, p.Password)
+	if p.user != "" {
+		u.User = url.UserPassword(p.user, p.password)
 	}
 	host := ""
-	if p.Host != "" {
-		host = p.Host
+	if p.host != "" {
+		host = p.host
 	}
-	if p.Port != "" {
-		host += ":" + p.Port
+	if p.port != "" {
+		host += ":" + p.port
 	}
 	u.Host = host
 
 	// Build the query
 	q := u.Query()
-	if p.ConnectTimeout != "" {
-		q.Add("connect_timeout", p.ConnectTimeout)
+	if p.connectTimeout != "" {
+		q.Add("connect_timeout", p.connectTimeout)
 	}
-	if p.SSLMode != "" {
-		q.Add("sslmode", p.SSLMode)
+	if p.sslMode != "" {
+		q.Add("sslmode", p.sslMode)
 	}
-	if p.SSLCert != "" {
-		q.Add("sslcert", p.SSLCert)
+	if p.sslCert != "" {
+		q.Add("sslcert", p.sslCert)
 	}
-	if p.SSLKey != "" {
-		q.Add("sslkey", p.SSLKey)
+	if p.sslKey != "" {
+		q.Add("sslkey", p.sslKey)
 	}
-	if p.SSLRootCert != "" {
-		q.Add("sslrootcert", p.SSLRootCert)
+	if p.sslRootCert != "" {
+		q.Add("sslrootcert", p.sslRootCert)
 	}
 	u.RawQuery = q.Encode()
 

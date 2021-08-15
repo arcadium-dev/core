@@ -22,7 +22,10 @@ import (
 
 func TestNewConfig(t *testing.T) {
 	t.Run("Test default driver", func(t *testing.T) {
-		cfg := setupSQLDatabase(t, config.Env(nil))
+		cfg := setupSQLDatabase(t, config.Env(map[string]string{
+			"POSTGRES_DB":   "db",
+			"POSTGRES_HOST": "host",
+		}))
 		if cfg.DriverName() != "pgx" {
 			t.Error("Incorrect sql database config for an empty environment")
 		}
@@ -31,6 +34,8 @@ func TestNewConfig(t *testing.T) {
 	t.Run("Test postgres driver", func(t *testing.T) {
 		cfg := setupSQLDatabase(t, config.Env(map[string]string{
 			"SQL_DATABASE_DRIVER": "postgres",
+			"POSTGRES_DB":         "db",
+			"POSTGRES_HOST":       "host",
 		}))
 		if cfg.DriverName() != "postgres" {
 			t.Error("Incorrect sql database config for a valid environment")
@@ -39,8 +44,10 @@ func TestNewConfig(t *testing.T) {
 
 	t.Run("Test WithPrefix", func(t *testing.T) {
 		cfg := setupSQLDatabase(t, config.Env(map[string]string{
-			"SQLX_SQL_DATABASE_DRIVER": "pgx",
-		}), config.WithPrefix("sqlx"))
+			"FOO_SQL_DATABASE_DRIVER": "pgx",
+			"FOO_POSTGRES_DB":         "db",
+			"FOO_POSTGRES_HOST":       "host",
+		}), config.WithPrefix("foo"))
 		if cfg.DriverName() != "pgx" {
 			t.Errorf("Incorrect sql database config for a valid environment: %s", cfg.DriverName())
 		}
@@ -67,6 +74,8 @@ func TestNewConfig(t *testing.T) {
 }
 
 func setupSQLDatabase(t *testing.T, e config.Env, opts ...config.Option) *SQLDatabase {
+	t.Helper()
+
 	e.Set()
 	defer e.Unset()
 

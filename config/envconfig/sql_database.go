@@ -59,7 +59,7 @@ func NewSQLDatabase(opts ...config.Option) (*SQLDatabase, error) {
 	driver := strings.TrimSpace(strings.ToLower(config.Driver))
 	switch driver {
 	case "pgx", "postgres":
-		p, err := NewPostgres()
+		p, err := NewPostgres(opts...)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to load postgres configuration")
 		}
