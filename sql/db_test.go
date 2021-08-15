@@ -18,5 +18,30 @@ import (
 	"testing"
 )
 
-func TestOpen(t *testing.T) {
+func TestOpenSuccess(t *testing.T) {
+	// FIXME
+}
+
+func TestOpenFailures(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Test driver name failure", func(t *testing.T) {
+		// FIXME
+	})
+
+	t.Run("Test dsn failure", func(t *testing.T) {
+		// FIXME
+	})
+
+	t.Run("Test migration failure", func(t *testing.T) {
+		// FIXME
+	})
+}
+
+func TestConnectSuccess(t *testing.T) {
+	// FIXME
+}
+
+func TestConnectFailure(t *testing.T) {
+	// FIXME
 }

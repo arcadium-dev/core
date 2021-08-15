@@ -16,11 +16,11 @@ package sql // import "arcadium.dev/core/sql"
 
 //go:generate mockgen -package mocksql -destination ./mock/config.go . Config
 
-// Config ... FIXME
+// Config contains the information to connect to an sql database.
 type Config interface {
-	// DriverName ... FIXME
+	// DriverName returns the name of the sql database driver.
 	DriverName() string
 
-	// DSN ... FIXME
+	// DSN returns a connection string.
 	DSN() string
 }

@@ -20,6 +20,52 @@ import (
 	"arcadium.dev/core/config"
 )
 
+func TestNewConfig(t *testing.T) {
+	t.Run("Test default driver", func(t *testing.T) {
+		cfg := setupSQLDatabase(t, config.Env(nil))
+		if cfg.DriverName() != "pgx" {
+			t.Error("Incorrect sql database config for an empty environment")
+		}
+	})
+
+	t.Run("Test postgres driver", func(t *testing.T) {
+		cfg := setupSQLDatabase(t, config.Env(map[string]string{
+			"SQL_DATABASE_DRIVER": "postgres",
+		}))
+		if cfg.DriverName() != "postgres" {
+			t.Error("Incorrect sql database config for a valid environment")
+		}
+	})
+
+	t.Run("Test WithPrefix", func(t *testing.T) {
+		cfg := setupSQLDatabase(t, config.Env(map[string]string{
+			"SQLX_SQL_DATABASE_DRIVER": "pgx",
+		}), config.WithPrefix("sqlx"))
+		if cfg.DriverName() != "pgx" {
+			t.Errorf("Incorrect sql database config for a valid environment: %s", cfg.DriverName())
+		}
+	})
+
+	t.Run("Test unsupported driver", func(t *testing.T) {
+		e := config.Env(map[string]string{
+			"SQL_DATABASE_DRIVER": "mysql",
+		})
+		e.Set()
+		defer e.Unset()
+
+		cfg, err := NewSQLDatabase()
+		if cfg != nil {
+			t.Errorf("Unexpected sql database config")
+		}
+		if err == nil {
+			t.Errorf("Error expected")
+		}
+		if err.Error() != "unsupported database driver: mysql" {
+			t.Errorf("Unexpected error: %s", err)
+		}
+	})
+}
+
 func setupSQLDatabase(t *testing.T, e config.Env, opts ...config.Option) *SQLDatabase {
 	e.Set()
 	defer e.Unset()
@@ -29,48 +75,4 @@ func setupSQLDatabase(t *testing.T, e config.Env, opts ...config.Option) *SQLDat
 		t.Errorf("error occurred: %s", err)
 	}
 	return cfg
-}
-
-func TestSQLDatabaseDefaultDriver(t *testing.T) {
-	cfg := setupSQLDatabase(t, config.Env(nil))
-
-	if cfg.DriverName() != "postgres" {
-		t.Error("incorrect sql database config for an empty environment")
-	}
-}
-
-func TestSQLDatabaseValidDriver(t *testing.T) {
-	cfg := setupSQLDatabase(t, config.Env(map[string]string{
-		"SQL_DATABASE_DRIVER": "postgres",
-	}))
-
-	if cfg.DriverName() != "postgres" {
-		t.Error("incorrect sql database config for a valid environment")
-	}
-}
-
-func TestSQLDatabaseWithPrefix(t *testing.T) {
-	cfg := setupSQLDatabase(t, config.Env(map[string]string{
-		"PLAYERS_DATABASE_DRIVER": "postgres",
-	}), config.WithPrefix("players"))
-
-	if cfg.DriverName() != "postgres" {
-		t.Error("incorrect sql database config for a valid environment")
-	}
-}
-
-func TestSQLDatabaseUnsupportedDriver(t *testing.T) {
-	e := config.Env(map[string]string{
-		"SQL_DATABASE_DRIVER": "mysql",
-	})
-	e.Set()
-	defer e.Unset()
-
-	cfg, err := NewSQLDatabase()
-	if cfg != nil {
-		t.Errorf("unexpected sql database config")
-	}
-	if err == nil || err.Error() != "unsupported database driver: mysql" {
-		t.Errorf("error expected")
-	}
 }

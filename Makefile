@@ -14,7 +14,7 @@
 
 export SHELL := /bin/bash
 
-mockgen_version            := v1.6.0
+mockgen_version := v1.6.0
 
 # ----
 
@@ -62,4 +62,4 @@ unit_test:
 .PHONY: test
 
 test: unit_test
-.PHONY: TEST
+.PHONY: test

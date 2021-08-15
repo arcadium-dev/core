@@ -15,8 +15,7 @@
 package envconfig // import "arcadium.dev/core/config/envconfig
 
 import (
-	"fmt"
-	"strings"
+	"net/url"
 
 	"github.com/kelseyhightower/envconfig"
 
@@ -25,63 +24,96 @@ import (
 
 type (
 	// Postgres holds the configuration settings needed to connect to a postgres database.
+	// The DB, HOST and SSLMODE variables are required. The SSLMODE defaults to "enabled".
+	//
+	// For sslmode setting, see https://www.postgresql.org/docs/current/libpq-ssl.html
 	Postgres struct {
-		DB             string // POSTGRES_DB
-		User           string // POSTGRES_USER
-		Password       string // POSTGRES_PASSWORD
-		Host           string // POSTGRES_HOST
-		Port           string // POSTGRES_PORT
-		ConnectTimeout string `split_words:"true"` // POSTGRES_CONNECT_TIMEOUT
-		SSLMode        string // POSTGRES_SSLMODE
-		SSLCert        string // POSTGRES_SSLCERT
-		SSLKey         string // POSTGRES_SSLKEY
-		SSLRootCert    string // POSTGRES_SSLROOTCERT
+		db             string // <PREFIX_>POSTGRES_DB
+		user           string // <PREFIX_>POSTGRES_USER
+		password       string // <PREFIX_>POSTGRES_PASSWORD
+		host           string // <PREFIX_>POSTGRES_HOST
+		port           string // <PREFIX_>POSTGRES_PORT
+		sslMode        string // <PREFIX_>POSTGRES_SSLMODE
+		sslCert        string // <PREFIX_>POSTGRES_SSLCERT
+		sslKey         string // <PREFIX_>POSTGRES_SSLKEY
+		sslRootCert    string // <PREFIX_>POSTGRES_SSLROOTCERT
+		connectTimeout string // <PREFIX_>POSTGRES_CONNECT_TIMEOUT
 	}
 )
 
 // NewPostgres returns the postgres configuration.
 func NewPostgres() (*Postgres, error) {
-	var p Postgres
-	if err := envconfig.Process("postgres", &p); err != nil {
+	config := struct {
+		DB             string `required:"true"`
+		User           string
+		Password       string
+		Host           string `required:"true"`
+		Port           string
+		SSLMode        string `default:"verify-full"`
+		SSLCert        string
+		SSLKey         string
+		SSLRootCert    string
+		Level          string
+		File           string
+		Format         string
+		ConnectTimeout string `split_words:"true"`
+	}{}
+	if err := envconfig.Process("postgres", &config); err != nil {
 		return nil, errors.Wrap(err, "failed to load postgres configuration")
 	}
-	return &p, nil
+	return &Postgres{
+		db:             config.DB,
+		user:           config.User,
+		password:       config.Password,
+		host:           config.Host,
+		port:           config.Port,
+		sslMode:        config.SSLMode,
+		sslCert:        config.SSLCert,
+		sslKey:         config.SSLKey,
+		sslRootCert:    config.SSLRootCert,
+		connectTimeout: config, Timeout,
+	}, nil
 }
 
 // DSN returns a connection string corresponding to the postgres configuration.
 //
 // See https://godoc.org/github.com/lib/pq for connection string parameters.
 func (p *Postgres) DSN() string {
-	dsn := ""
+	// Build the url
+	u := &url.URL{Scheme: "postgres"}
 	if p.DB != "" {
-		dsn += fmt.Sprintf("dbname='%s' ", p.DB)
+		u.Path = p.DB
 	}
 	if p.User != "" {
-		dsn += fmt.Sprintf("user='%s' ", p.User)
+		u.User = url.UserPassword(p.User, p.Password)
 	}
-	if p.Password != "" {
-		dsn += fmt.Sprintf("password='%s' ", p.Password)
-	}
+	host := ""
 	if p.Host != "" {
-		dsn += fmt.Sprintf("host='%s' ", p.Host)
+		host = p.Host
 	}
 	if p.Port != "" {
-		dsn += fmt.Sprintf("port='%s' ", p.Port)
+		host += ":" + p.Port
 	}
+	u.Host = host
+
+	// Build the query
+	q := u.Query()
 	if p.ConnectTimeout != "" {
-		dsn += fmt.Sprintf("connect_timeout='%s' ", p.ConnectTimeout)
+		q.Add("connect_timeout", p.ConnectTimeout)
 	}
 	if p.SSLMode != "" {
-		dsn += fmt.Sprintf("sslmode='%s' ", p.SSLMode)
+		q.Add("sslmode", p.SSLMode)
 	}
 	if p.SSLCert != "" {
-		dsn += fmt.Sprintf("sslcert='%s' ", p.SSLCert)
+		q.Add("sslcert", p.SSLCert)
 	}
 	if p.SSLKey != "" {
-		dsn += fmt.Sprintf("sslkey='%s' ", p.SSLKey)
+		q.Add("sslkey", p.SSLKey)
 	}
 	if p.SSLRootCert != "" {
-		dsn += fmt.Sprintf("sslrootcert='%s' ", p.SSLRootCert)
+		q.Add("sslrootcert", p.SSLRootCert)
 	}
-	return strings.TrimSpace(dsn)
+	u.RawQuery = q.Encode()
+
+	return u.String()
 }
