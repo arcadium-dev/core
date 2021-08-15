@@ -49,16 +49,17 @@ func NewSQLDatabase(opts ...config.Option) (*SQLDatabase, error) {
 	prefix := o.Prefix() + sqlPrefix
 
 	config := struct {
-		Driver string `default:"postgres"`
+		Driver string `default:"pgx"`
 	}{}
 	if err := envconfig.Process(prefix, &config); err != nil {
 		return nil, errors.Wrapf(err, "failed to load %s configuration", prefix)
 	}
 
 	var namer DataSourceNamer
-	switch strings.TrimSpace(strings.ToLower(config.Driver)) {
-	case "postgres":
-		p, err := NewPostgres()
+	driver := strings.TrimSpace(strings.ToLower(config.Driver))
+	switch driver {
+	case "pgx", "postgres":
+		p, err := NewPostgres(opts...)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to load postgres configuration")
 		}
@@ -68,11 +69,11 @@ func NewSQLDatabase(opts ...config.Option) (*SQLDatabase, error) {
 	case "sqlite":
 		fallthrough
 	default:
-		return nil, errors.Errorf("unsupported database driver: %s", config.Driver)
+		return nil, errors.Errorf("unsupported database driver: %s", driver)
 	}
 
 	return &SQLDatabase{
-		driver:          config.Driver,
+		driver:          driver,
 		DataSourceNamer: namer,
 	}, nil
 }

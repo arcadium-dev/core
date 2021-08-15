@@ -20,51 +20,103 @@ import (
 	"arcadium.dev/core/config"
 )
 
-func postgresSetup(t *testing.T, e config.Env) *Postgres {
+func TestPostgres(t *testing.T) {
+	t.Run("Minimal Env", func(t *testing.T) {
+		cfg := setupPostgres(t, config.Env(map[string]string{
+			"POSTGRES_DB":   "db",
+			"POSTGRES_HOST": "host",
+		}))
+
+		expectedDSN := "postgres://host/db?sslmode=verify-full"
+		if cfg.DSN() != expectedDSN {
+			t.Errorf("\nExpected dsn: %s\nActual dsn:   %s", expectedDSN, cfg.DSN())
+		}
+	})
+
+	t.Run("Full Env", func(t *testing.T) {
+		cfg := setupPostgres(t, config.Env(map[string]string{
+			"POSTGRES_DB":              "db",
+			"POSTGRES_USER":            "user",
+			"POSTGRES_PASSWORD":        "password",
+			"POSTGRES_HOST":            "host",
+			"POSTGRES_PORT":            "port",
+			"POSTGRES_CONNECT_TIMEOUT": "connect_timeout",
+			"POSTGRES_SSLMODE":         "sslmode",
+			"POSTGRES_SSLCERT":         "sslcert",
+			"POSTGRES_SSLKEY":          "sslkey",
+			"POSTGRES_SSLROOTCERT":     "sslrootcert",
+		}))
+
+		expectedDSN := "postgres://user:password@host:port/db?connect_timeout=connect_timeout&sslcert=sslcert&sslkey=sslkey&sslmode=sslmode&sslrootcert=sslrootcert"
+		if cfg.DSN() != expectedDSN {
+			t.Errorf("\nExpected dsn: %s\nActual dsn:   %s", expectedDSN, cfg.DSN())
+		}
+	})
+
+	t.Run("Partial Env", func(t *testing.T) {
+		cfg := setupPostgres(t, config.Env(map[string]string{
+			"FOO_POSTGRES_DB":       "players",
+			"FOO_POSTGRES_USER":     "arcadium",
+			"FOO_POSTGRES_PASSWORD": "password",
+			"FOO_POSTGRES_HOST":     "postgres",
+			"FOO_POSTGRES_PORT":     "5432",
+			"FOO_POSTGRES_SSLMODE":  "disable",
+		}), config.WithPrefix("foo"))
+
+		expectedDSN := "postgres://arcadium:password@postgres:5432/players?sslmode=disable"
+		if cfg.DSN() != expectedDSN {
+			t.Errorf("\nExpected dsn: %s\nActual dsn    %s", expectedDSN, cfg.DSN())
+		}
+	})
+}
+
+func TestPostgresFailure(t *testing.T) {
+	t.Run("Empty Env", func(t *testing.T) {
+		cfg, err := NewPostgres()
+
+		if cfg != nil {
+			t.Errorf("expected a nil cfg: %+v", cfg)
+		}
+		if err == nil {
+			t.Errorf("expected an error")
+		}
+		expectedErr := "required key POSTGRES_DB missing value: failed to load postgres configuration"
+		if err.Error() != expectedErr {
+			t.Errorf("\nExpected error: %s\nActual error  %s", expectedErr, err)
+		}
+	})
+
+	t.Run("Missing Host", func(t *testing.T) {
+		e := config.Env(map[string]string{
+			"POSTGRES_DB": "players",
+		})
+		e.Set()
+		defer e.Unset()
+
+		cfg, err := NewPostgres()
+
+		if cfg != nil {
+			t.Errorf("expected a nil cfg: %+v", cfg)
+		}
+		if err == nil {
+			t.Errorf("expected an error")
+		}
+		expectedErr := "required key POSTGRES_HOST missing value: failed to load postgres configuration"
+		if err.Error() != expectedErr {
+			t.Errorf("\nExpected error: %s\nActual error  %s", expectedErr, err)
+		}
+	})
+}
+
+func setupPostgres(t *testing.T, e config.Env, opts ...config.Option) *Postgres {
+	t.Helper()
+
 	e.Set()
 	defer e.Unset()
 
-	cfg, err := NewPostgres()
+	cfg, err := NewPostgres(opts...)
 	if err != nil {
 		t.Errorf("error occurred: %s", err)
 	}
 	return cfg
-}
-
-func TestPostgresFullEnv(t *testing.T) {
-	expectedDSN := "dbname='db' user='user' password='password' host='host' port='port' connect_timeout='connect_timeout' sslmode='sslmode' sslcert='sslcert' sslkey='sslkey' sslrootcert='sslrootcert'"
-
-	cfg := postgresSetup(t, config.Env(map[string]string{
-		"POSTGRES_DB":              "db",
-		"POSTGRES_USER":            "user",
-		"POSTGRES_PASSWORD":        "password",
-		"POSTGRES_HOST":            "host",
-		"POSTGRES_PORT":            "port",
-		"POSTGRES_CONNECT_TIMEOUT": "connect_timeout",
-		"POSTGRES_SSLMODE":         "sslmode",
-		"POSTGRES_SSLCERT":         "sslcert",
-		"POSTGRES_SSLKEY":          "sslkey",
-		"POSTGRES_SSLROOTCERT":     "sslrootcert",
-	}))
-
-	if cfg.DSN() != expectedDSN {
-		t.Errorf("incorrect postgres DSN, expected %s, actual %s", expectedDSN, cfg.DSN())
-	}
-}
-
-func TestPostgresPartialEnv(t *testing.T) {
-	expectedDSN := "dbname='players' user='arcadium' password='password' host='postgres' port='5432' sslmode='disable'"
-
-	cfg := postgresSetup(t, config.Env(map[string]string{
-		"POSTGRES_DB":       "players",
-		"POSTGRES_USER":     "arcadium",
-		"POSTGRES_PASSWORD": "password",
-		"POSTGRES_HOST":     "postgres",
-		"POSTGRES_PORT":     "5432",
-		"POSTGRES_SSLMODE":  "disable",
-	}))
-
-	if cfg.DSN() != expectedDSN {
-		t.Errorf("incorrect postgres DSN, expected %s, actual %s", expectedDSN, cfg.DSN())
-	}
 }

@@ -18,5 +18,7 @@ import (
 	"database/sql"
 )
 
-// Migration defines a function to validate and migrate the DB schema.
-type Migration func(*sql.DB) error
+type (
+	// Migration defines a function type to validate and migrate the DB schema.
+	Migration func(*sql.DB) error
+)
