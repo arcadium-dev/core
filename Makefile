@@ -18,48 +18,48 @@ mockgen_version := v1.6.0
 
 # ----
 
-all: lint test
 .PHONY: all
+all: lint test
 
 # ----
 
+.PHONY: install_mockgen
 install_mockgen:
 	@bin/install_mockgen $(mockgen_version)
-.PHONY: install_mockgen
 
-install: install_mockgen
 .PHONY: install
+install: install_mockgen
 
 # ----
 
+.PHONY: fmt
 fmt:
 	@printf "\nRunning go fmt...\n"
 	@go fmt ./...
-.PHONY: fmt
 
+.PHONY: tidy
 tidy:
 	@printf "\nRunning go mod tidy...\n"
 	@go mod tidy
-.PHONY: tidy
 
+.PHONY: generate
 generate:
 	@printf "\nRunning go generate...\n"
 	@go generate -x ./...
-.PHONY: generate
 
+.PHONY: lint
 lint: fmt tidy generate
 	@printf "\nChecking for changed files...\n"
 	@git status --porcelain
 	@printf "\n"
 	@if [[ "$${CI}" == "true" ]]; then $$(exit $$(git status --porcelain | wc -l)); fi
-.PHONY: lint
 
 # ----
 
+.PHONY: test
 unit_test:
 	@printf "\nRunning go test...\n"
-	@go test -cover $$(go list ./... | grep -v /mock)
-.PHONY: test
+	@go test -cover -race $$(go list ./... | grep -v /mock)
 
-test: unit_test
 .PHONY: test
+test: unit_test

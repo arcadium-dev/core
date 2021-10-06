@@ -57,8 +57,7 @@ func TestNewConfig(t *testing.T) {
 		e := config.Env(map[string]string{
 			"SQL_DATABASE_DRIVER": "mysql",
 		})
-		e.Set()
-		defer e.Unset()
+		e.Set(t)
 
 		cfg, err := NewSQLDatabase()
 		if cfg != nil {
@@ -76,8 +75,7 @@ func TestNewConfig(t *testing.T) {
 func setupSQLDatabase(t *testing.T, e config.Env, opts ...config.Option) *SQLDatabase {
 	t.Helper()
 
-	e.Set()
-	defer e.Unset()
+	e.Set(t)
 
 	cfg, err := NewSQLDatabase(opts...)
 	if err != nil {

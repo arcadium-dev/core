@@ -21,7 +21,7 @@ import (
 func TestOptionsWithPrefix(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Test WithPredix - empty prefix", func(t *testing.T) {
+	t.Run("Test WithPrefix - empty prefix", func(t *testing.T) {
 		opts := &Options{}
 
 		WithPrefix("").Apply(opts)

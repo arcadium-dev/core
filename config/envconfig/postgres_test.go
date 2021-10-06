@@ -90,8 +90,7 @@ func TestPostgresFailure(t *testing.T) {
 		e := config.Env(map[string]string{
 			"POSTGRES_DB": "players",
 		})
-		e.Set()
-		defer e.Unset()
+		e.Set(t)
 
 		cfg, err := NewPostgres()
 
@@ -111,8 +110,7 @@ func TestPostgresFailure(t *testing.T) {
 func setupPostgres(t *testing.T, e config.Env, opts ...config.Option) *Postgres {
 	t.Helper()
 
-	e.Set()
-	defer e.Unset()
+	e.Set(t)
 
 	cfg, err := NewPostgres(opts...)
 	if err != nil {

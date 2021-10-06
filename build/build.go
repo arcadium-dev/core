@@ -24,7 +24,7 @@ import (
 // Information holds the build information.
 type Information map[string]interface{}
 
-// Info is a quick way to populate the build information.
+// Info populates the build information.
 func Info(v, b, s, d string) Information {
 	return map[string]interface{}{
 		"name":    filepath.Base(os.Args[0]),
