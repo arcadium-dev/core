@@ -14,22 +14,12 @@
 
 package config // import "arcadium.dev/core/config
 
-import "os"
+import "testing"
 
 type Env map[string]string
 
-func (e Env) Set() {
+func (e Env) Set(t *testing.T) {
 	for k, v := range e {
-		if err := os.Setenv(k, v); err != nil {
-			panic("failed to setenv")
-		}
-	}
-}
-
-func (e Env) Unset() {
-	for k, _ := range e {
-		if err := os.Unsetenv(k); err != nil {
-			panic("failed to unsetenv")
-		}
+		t.Setenv(k, v)
 	}
 }
