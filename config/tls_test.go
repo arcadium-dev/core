@@ -114,21 +114,21 @@ type mockTLS struct {
 
 func (m mockTLS) Cert() string {
 	if m.cert == "" {
-		return "../insecure/cert.pem"
+		return "../test/insecure/cert.pem"
 	}
 	return m.cert
 }
 
 func (m mockTLS) Key() string {
 	if m.key == "" {
-		return "../insecure/key.pem"
+		return "../test/insecure/key.pem"
 	}
 	return m.key
 }
 
 func (m mockTLS) CACert() string {
 	if m.cacert == "" {
-		return "../insecure/rootCA.pem"
+		return "../test/insecure/rootCA.pem"
 	}
 	return m.cacert
 }

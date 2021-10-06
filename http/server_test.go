@@ -32,8 +32,8 @@ func TestServerNewWithTLS(t *testing.T) {
 
 	mockConfig := mockhttp.NewMockConfig(ctrl)
 	mockConfig.EXPECT().Addr().Return(":8080")
-	mockConfig.EXPECT().Cert().Return("../insecure/cert.pem")
-	mockConfig.EXPECT().Key().Return("../insecure/key.pem")
+	mockConfig.EXPECT().Cert().Return("../test/insecure/cert.pem")
+	mockConfig.EXPECT().Key().Return("../test/insecure/key.pem")
 
 	tlsConfig, tlsErr := config.NewTLS(mockConfig)
 	if tlsErr != nil {
