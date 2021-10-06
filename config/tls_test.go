@@ -19,13 +19,26 @@ import (
 	"testing"
 )
 
+const (
+	goodCert   = "../test/insecure/cert.pem"
+	goodKey    = "../test/insecure/key.pem"
+	goodCACert = "../test/insecure/rootCA.pem"
+
+	badCert   = "bad cert"
+	badKey    = "bad key"
+	badCACert = "bad cacert"
+)
+
 func TestNewTLS(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Without options, bad cert", func(t *testing.T) {
 		t.Parallel()
 
-		var mockCfg = mockTLS{cert: "bad cert"}
+		var mockCfg = mockTLS{
+			cert: badCert,
+			key:  goodKey,
+		}
 		cfg, err := NewTLS(mockCfg)
 		if cfg != nil {
 			t.Errorf("Unexpected cfg: %+v", cfg)
@@ -41,7 +54,10 @@ func TestNewTLS(t *testing.T) {
 	t.Run("Without options, bad key", func(t *testing.T) {
 		t.Parallel()
 
-		var mockCfg = mockTLS{key: "bad key"}
+		var mockCfg = mockTLS{
+			cert: goodCert,
+			key:  badKey,
+		}
 		cfg, err := NewTLS(mockCfg)
 		if cfg != nil {
 			t.Errorf("Unexpected cfg: %+v", cfg)
@@ -57,7 +73,10 @@ func TestNewTLS(t *testing.T) {
 	t.Run("Without options, success", func(t *testing.T) {
 		t.Parallel()
 
-		var mockCfg = mockTLS{}
+		var mockCfg = mockTLS{
+			cert: goodCert,
+			key:  goodKey,
+		}
 		cfg, err := NewTLS(mockCfg)
 		if cfg == nil {
 			t.Errorf("Expected a cfg")
@@ -70,7 +89,11 @@ func TestNewTLS(t *testing.T) {
 	t.Run("WithMTLS option, bad cacert", func(t *testing.T) {
 		t.Parallel()
 
-		var mockCfg = mockTLS{cacert: "bad cacert"}
+		var mockCfg = mockTLS{
+			cert:   goodCert,
+			key:    goodKey,
+			cacert: badCACert,
+		}
 		cfg, err := NewTLS(mockCfg, WithMTLS())
 		if cfg != nil {
 			t.Errorf("Unexpected cfg: %+v", cfg)
@@ -83,10 +106,30 @@ func TestNewTLS(t *testing.T) {
 		}
 	})
 
-	t.Run("WithMTLS option, success", func(t *testing.T) {
+	t.Run("WithMTLS option, no cacert, success (assumes ca cert available from system)", func(t *testing.T) {
 		t.Parallel()
 
-		var mockCfg = mockTLS{}
+		var mockCfg = mockTLS{
+			cert: goodCert,
+			key:  goodKey,
+		}
+		cfg, err := NewTLS(mockCfg, WithMTLS())
+		if cfg == nil {
+			t.Errorf("Expected a cfg")
+		}
+		if err != nil {
+			t.Errorf("Unexpected err: %s", err)
+		}
+	})
+
+	t.Run("WithMTLS option, cacert available, success", func(t *testing.T) {
+		t.Parallel()
+
+		var mockCfg = mockTLS{
+			cert:   goodCert,
+			key:    goodKey,
+			cacert: goodCACert,
+		}
 		cfg, err := NewTLS(mockCfg, WithMTLS())
 		if cfg == nil {
 			t.Errorf("Expected a cfg")
@@ -108,27 +151,12 @@ func TestWithMTLS(t *testing.T) {
 	}
 }
 
-type mockTLS struct {
-	cert, key, cacert string
-}
-
-func (m mockTLS) Cert() string {
-	if m.cert == "" {
-		return "../test/insecure/cert.pem"
+type (
+	mockTLS struct {
+		cert, key, cacert string
 	}
-	return m.cert
-}
+)
 
-func (m mockTLS) Key() string {
-	if m.key == "" {
-		return "../test/insecure/key.pem"
-	}
-	return m.key
-}
-
-func (m mockTLS) CACert() string {
-	if m.cacert == "" {
-		return "../test/insecure/rootCA.pem"
-	}
-	return m.cacert
-}
+func (m mockTLS) Cert() string   { return m.cert }
+func (m mockTLS) Key() string    { return m.key }
+func (m mockTLS) CACert() string { return m.cacert }

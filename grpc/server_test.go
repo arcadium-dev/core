@@ -25,6 +25,8 @@ import (
 )
 
 func sharedNewTest(t *testing.T, setup func(*mockgrpc.MockConfig), check func(*Server, error), opts ...Option) {
+	t.Helper()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -99,6 +101,8 @@ func TestServerNewInsecure(t *testing.T) {
 }
 
 func sharedServeTest(t *testing.T, setup func(*mockgrpc.MockConfig), check func(*Server, chan error)) {
+	t.Helper()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
