@@ -65,8 +65,8 @@ func TestLogger(t *testing.T) {
 }
 
 func setupLogger(t *testing.T, e config.Env, opts ...config.Option) *Logger {
-	e.Set()
-	defer e.Unset()
+	t.Helper()
+	e.Set(t)
 
 	cfg, err := NewLogger(opts...)
 	if err != nil {

@@ -71,8 +71,9 @@ func TestServer(t *testing.T) {
 }
 
 func setupServer(t *testing.T, e config.Env, opts ...config.Option) *Server {
-	e.Set()
-	defer e.Unset()
+	t.Helper()
+
+	e.Set(t)
 
 	cfg, err := NewServer(opts...)
 	if err != nil {

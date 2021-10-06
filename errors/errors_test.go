@@ -51,7 +51,25 @@ func TestError(t *testing.T) {
 		}
 	})
 
-	t.Run("Test Wrap", func(t *testing.T) {
+	t.Run("Test Wrap - nil error", func(t *testing.T) {
+		t.Parallel()
+
+		err := Wrap(nil, "test error")
+		if err != nil {
+			t.Errorf("Unexpected error: %s", err)
+		}
+	})
+
+	t.Run("Test Wrap - non-nil error", func(t *testing.T) {
+		t.Parallel()
+
+		err := Wrap(Err, "test error")
+		if err.Error() != "error: test error" {
+			t.Errorf("Unexpected error: %s", err)
+		}
+	})
+
+	t.Run("Test Wrapf - nil error", func(t *testing.T) {
 		t.Parallel()
 
 		err := Wrapf(nil, "%s", "test error")
@@ -60,7 +78,7 @@ func TestError(t *testing.T) {
 		}
 	})
 
-	t.Run("Test Wrapf", func(t *testing.T) {
+	t.Run("Test Wrapf - non-nil error", func(t *testing.T) {
 		t.Parallel()
 
 		err := Wrapf(New("first"), "%s", "second")

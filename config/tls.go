@@ -36,7 +36,7 @@ type TLS interface {
 	CACert() string
 }
 
-// NewTLS will create a tls.Config given the config and options. This will
+// NewTLS will create a *tls.Config given the config and options. This will
 // return an error if there is a problem loading the required certificate files.
 // If the WithMTLS option is specified, a client CA cert is required.
 func NewTLS(config TLS, opts ...TLSOption) (*tls.Config, error) {
@@ -54,23 +54,20 @@ func NewTLS(config TLS, opts ...TLSOption) (*tls.Config, error) {
 
 	// If we are doing mTLS...
 	if cfg.ClientAuth == tls.RequireAndVerifyClientCert {
-		// ... create a CA certificate pool and add client's CA cert to it.
-		cfg.ClientCAs = x509.NewCertPool()
-		caCert, err := os.ReadFile(config.CACert())
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to load the client CA certificate")
+		// ... and we have a CA cert
+		caCertCfg := config.CACert()
+		if caCertCfg != "" {
+			// ... create a CA certificate pool and add client's CA cert to it.
+			cfg.ClientCAs = x509.NewCertPool()
+			caCert, err := os.ReadFile(caCertCfg)
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to load the client CA certificate")
+			}
+			cfg.ClientCAs.AppendCertsFromPEM(caCert)
 		}
-		cfg.ClientCAs.AppendCertsFromPEM(caCert)
 	}
 
 	return cfg, nil
-}
-
-// WithMTLS will setup the tls.Config to require and verify client connections.
-func WithMTLS() TLSOption {
-	return newTLSOption(func(cfg *tls.Config) {
-		cfg.ClientAuth = tls.RequireAndVerifyClientCert
-	})
 }
 
 type (
@@ -90,4 +87,11 @@ func newTLSOption(f func(*tls.Config)) tlsOption {
 
 func (o tlsOption) apply(cfg *tls.Config) {
 	o.f(cfg)
+}
+
+// WithMTLS will setup the tls.Config to require and verify client connections.
+func WithMTLS() TLSOption {
+	return newTLSOption(func(cfg *tls.Config) {
+		cfg.ClientAuth = tls.RequireAndVerifyClientCert
+	})
 }

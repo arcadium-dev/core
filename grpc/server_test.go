@@ -25,6 +25,8 @@ import (
 )
 
 func sharedNewTest(t *testing.T, setup func(*mockgrpc.MockConfig), check func(*Server, error), opts ...Option) {
+	t.Helper()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -36,7 +38,7 @@ func sharedNewTest(t *testing.T, setup func(*mockgrpc.MockConfig), check func(*S
 func TestServerNewSecure01(t *testing.T) {
 	sharedNewTest(t,
 		func(mockConfig *mockgrpc.MockConfig) {
-			mockConfig.EXPECT().Cert().Return("../insecure/cert.pem")
+			mockConfig.EXPECT().Cert().Return("../test/insecure/cert.pem")
 			mockConfig.EXPECT().Key().Return("")
 		},
 		func(s *Server, err error) {
@@ -71,9 +73,9 @@ func TestServerNewSecure02(t *testing.T) {
 func TestServerNewTLS(t *testing.T) {
 	sharedNewTest(t,
 		func(mockConfig *mockgrpc.MockConfig) {
-			mockConfig.EXPECT().Cert().Return("../insecure/cert.pem").Times(2)
-			mockConfig.EXPECT().Key().Return("../insecure/key.pem").Times(2)
-			mockConfig.EXPECT().CACert().Return("../insecure/rootCA.pem")
+			mockConfig.EXPECT().Cert().Return("../test/insecure/cert.pem").Times(2)
+			mockConfig.EXPECT().Key().Return("../test/insecure/key.pem").Times(2)
+			mockConfig.EXPECT().CACert().Return("../test/insecure/rootCA.pem")
 			mockConfig.EXPECT().Addr().Return(":4201")
 		},
 		func(s *Server, err error) {
@@ -99,6 +101,8 @@ func TestServerNewInsecure(t *testing.T) {
 }
 
 func sharedServeTest(t *testing.T, setup func(*mockgrpc.MockConfig), check func(*Server, chan error)) {
+	t.Helper()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

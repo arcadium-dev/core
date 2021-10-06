@@ -18,7 +18,8 @@ import (
 	"testing"
 )
 
-func setup() Information {
+func setup(t *testing.T) Information {
+	t.Helper()
 	info := Info("version", "branch", "shasum", "date")
 	info["name"] = "testing"
 	info["go"] = "go"
@@ -26,7 +27,9 @@ func setup() Information {
 }
 
 func TestFields(t *testing.T) {
-	info := setup()
+	t.Parallel()
+
+	info := setup(t)
 	fields := info.Fields()
 
 	version, ok := fields["version"].(string)
@@ -61,8 +64,9 @@ func TestFields(t *testing.T) {
 }
 
 func TestVersion(t *testing.T) {
-	info := setup()
+	t.Parallel()
 
+	info := setup(t)
 	v := info.Version()
 
 	if v != "testing version (branch: branch, shasum: shasum, date: date, go: go)" {
