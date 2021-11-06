@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package envconfig
+package config
 
 import (
 	"testing"
 
-	"arcadium.dev/core/config"
+	"arcadium.dev/core/test"
 )
 
 func TestLogger(t *testing.T) {
 	t.Run("Empty Env", func(t *testing.T) {
-		cfg := setupLogger(t, config.Env(nil))
+		cfg := setupLogger(t, test.Env(nil))
 
 		if cfg.Level() != "" || cfg.File() != "" || cfg.Format() != "" {
 			t.Error("incorrect logging config for an empty environment")
@@ -30,7 +30,7 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("Full Env", func(t *testing.T) {
-		cfg := setupLogger(t, config.Env(map[string]string{
+		cfg := setupLogger(t, test.Env(map[string]string{
 			"LOG_LEVEL":  "level",
 			"LOG_FILE":   "file",
 			"LOG_FORMAT": "format",
@@ -42,7 +42,7 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("Partial Env", func(t *testing.T) {
-		cfg := setupLogger(t, config.Env(map[string]string{
+		cfg := setupLogger(t, test.Env(map[string]string{
 			"LOG_LEVEL": "level",
 		}))
 
@@ -52,11 +52,11 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("WithPrefix", func(t *testing.T) {
-		cfg := setupLogger(t, config.Env(map[string]string{
+		cfg := setupLogger(t, test.Env(map[string]string{
 			"PREFIX_LOG_LEVEL":  "level",
 			"PREFIX_LOG_FILE":   "file",
 			"PREFIX_LOG_FORMAT": "format",
-		}), config.WithPrefix("prefix"))
+		}), WithPrefix("prefix"))
 
 		if cfg.Level() != "level" || cfg.File() != "file" || cfg.Format() != "format" {
 			t.Error("incorrect logging config for a full environment")
@@ -64,7 +64,7 @@ func TestLogger(t *testing.T) {
 	})
 }
 
-func setupLogger(t *testing.T, e config.Env, opts ...config.Option) *Logger {
+func setupLogger(t *testing.T, e test.Env, opts ...Option) *Logger {
 	t.Helper()
 	e.Set(t)
 

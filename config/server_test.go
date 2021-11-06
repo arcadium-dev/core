@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package envconfig
+package config
 
 import (
 	"testing"
 
-	"arcadium.dev/core/config"
+	"arcadium.dev/core/test"
 )
 
 func TestServer(t *testing.T) {
 	t.Run("Empty Env", func(t *testing.T) {
-		cfg := setupServer(t, config.Env(nil))
+		cfg := setupServer(t, test.Env(nil))
 
 		if cfg.Addr() != "" || cfg.Cert() != "" || cfg.Key() != "" || cfg.CACert() != "" {
 			t.Error("incorrect server config for an empty environment")
@@ -30,7 +30,7 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("Full Env", func(t *testing.T) {
-		cfg := setupServer(t, config.Env(map[string]string{
+		cfg := setupServer(t, test.Env(map[string]string{
 			"SERVER_ADDR":   "test_addr:42",
 			"SERVER_CERT":   "/opt/cert.crt",
 			"SERVER_KEY":    "/opt/key.crt",
@@ -44,7 +44,7 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("Partial Env", func(t *testing.T) {
-		cfg := setupServer(t, config.Env(map[string]string{
+		cfg := setupServer(t, test.Env(map[string]string{
 			"SERVER_CERT": "/opt/cert.crt",
 			"SERVER_KEY":  "/opt/key.crt",
 		}))
@@ -56,12 +56,12 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("WithPrefix", func(t *testing.T) {
-		cfg := setupServer(t, config.Env(map[string]string{
+		cfg := setupServer(t, test.Env(map[string]string{
 			"FANCY_SERVER_ADDR":   "test_addr:42",
 			"FANCY_SERVER_CERT":   "/opt/cert.crt",
 			"FANCY_SERVER_KEY":    "/opt/key.crt",
 			"FANCY_SERVER_CACERT": "/opt/cacert.crt",
-		}), config.WithPrefix("fancy"))
+		}), WithPrefix("fancy"))
 
 		if cfg.Addr() != "test_addr:42" || cfg.Cert() != "/opt/cert.crt" ||
 			cfg.Key() != "/opt/key.crt" || cfg.CACert() != "/opt/cacert.crt" {
@@ -70,7 +70,7 @@ func TestServer(t *testing.T) {
 	})
 }
 
-func setupServer(t *testing.T, e config.Env, opts ...config.Option) *Server {
+func setupServer(t *testing.T, e test.Env, opts ...Option) *Server {
 	t.Helper()
 
 	e.Set(t)

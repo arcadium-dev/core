@@ -20,56 +20,36 @@ import (
 
 func setup(t *testing.T) Information {
 	t.Helper()
-	info := Info("version", "branch", "shasum", "date")
-	info["name"] = "testing"
-	info["go"] = "go"
+	info := Info("Testing", "Version", "Branch", "Commit", "Date")
+	info.Go = "Go"
 	return info
 }
 
 func TestFields(t *testing.T) {
 	t.Parallel()
 
-	info := setup(t)
-	fields := info.Fields()
+	fields := setup(t).Fields()
 
-	version, ok := fields["version"].(string)
-	if !ok || version != "version" {
-		t.Error("version incorrect")
-	}
-
-	branch, ok := fields["branch"].(string)
-	if !ok || branch != "branch" {
-		t.Error("branch incorrect")
-	}
-
-	shasum, ok := fields["shasum"].(string)
-	if !ok || shasum != "shasum" {
-		t.Error("shasum incorrect")
-	}
-
-	date, ok := fields["date"].(string)
-	if !ok || date != "date" {
-		t.Error("date incorrect")
-	}
-
-	name, ok := fields["name"].(string)
-	if !ok || name != "testing" {
-		t.Error("date incorrect")
-	}
-
-	g, ok := fields["go"].(string)
-	if !ok || g != "go" {
-		t.Error("go incorrect")
+	for i, expected := range []string{
+		"name", "Testing", "version", "Version", "branch", "Branch", "commit", "Commit", "date", "Date", "go", "Go",
+	} {
+		actual, ok := fields[1].(string)
+		if !ok {
+			t.Errorf("Failed type assertion")
+		}
+		if fields[i].(string) != expected {
+			t.Errorf("Expected %s, Actual: %s", expected, actual)
+		}
 	}
 }
 
-func TestVersion(t *testing.T) {
+func TestString(t *testing.T) {
 	t.Parallel()
 
-	info := setup(t)
-	v := info.Version()
+	actual := setup(t).String()
 
-	if v != "testing version (branch: branch, shasum: shasum, date: date, go: go)" {
-		t.Error("version incorrect")
+	expected := "Testing Version (branch: Branch, commit: Commit, date: Date, go: Go)"
+	if actual != expected {
+		t.Errorf("\nExpected: %s,\nActual:   %s", expected, actual)
 	}
 }

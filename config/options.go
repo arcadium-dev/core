@@ -15,37 +15,35 @@
 package config // import "arcadium.dev/core/config
 
 type (
-	Options struct {
-		prefix string
-	}
-
-	// Option provides options when collecting configuration information.
+	// Option provides options when loading configuration information.
 	Option interface {
-		Apply(*Options)
-	}
-
-	option struct {
-		f func(*Options)
+		apply(*options)
 	}
 )
 
-func (o *Options) Prefix() string {
-	return o.prefix
-}
-
-func newOption(f func(*Options)) *option {
-	return &option{f: f}
-}
-
-func (o *option) Apply(opts *Options) {
-	o.f(opts)
-}
-
 // WithPrefix adds a prefix to the name of the enviroment variables being referenced.
 func WithPrefix(prefix string) Option {
-	return newOption(func(opts *Options) {
+	return newOption(func(opts *options) {
 		if prefix != "" {
 			opts.prefix = prefix + "_" + opts.prefix
 		}
 	})
+}
+
+type (
+	options struct {
+		prefix string
+	}
+
+	option struct {
+		f func(*options)
+	}
+)
+
+func (o *option) apply(opts *options) {
+	o.f(opts)
+}
+
+func newOption(f func(*options)) *option {
+	return &option{f: f}
 }

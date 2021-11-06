@@ -14,6 +14,7 @@
 
 package server
 
+/*
 import (
 	"arcadium.dev/core/config"
 	"arcadium.dev/core/grpc"
@@ -92,3 +93,4 @@ func (cfg *Config) GRPCServer() grpc.Config {
 func (cfg *Config) HTTPServer() http.Config {
 	return cfg.httpServer
 }
+*/

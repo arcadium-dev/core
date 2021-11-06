@@ -16,39 +16,41 @@ package build // import "arcadium.dev/core/build"
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"runtime"
 )
 
 // Information holds the build information.
-type Information map[string]interface{}
+type Information struct {
+	Name, Version, Branch, Commit, Date, Go string
+}
 
 // Info populates the build information.
-func Info(v, b, s, d string) Information {
-	return map[string]interface{}{
-		"name":    filepath.Base(os.Args[0]),
-		"version": v,
-		"branch":  b,
-		"shasum":  s,
-		"date":    d,
-		"go":      runtime.Version(),
+func Info(n, v, b, c, d string) Information {
+	return Information{
+		Name:    n,
+		Version: v,
+		Branch:  b,
+		Commit:  c,
+		Date:    d,
+		Go:      runtime.Version(),
 	}
 }
 
 // Fields provides an intuitive way to add the build information to a log entry.
-func (i Information) Fields() map[string]interface{} {
-	return i
+func (i Information) Fields() []interface{} {
+	return []interface{}{
+		"name", i.Name,
+		"version", i.Version,
+		"branch", i.Branch,
+		"commit", i.Commit,
+		"date", i.Date,
+		"go", i.Go,
+	}
 }
 
-// Version provides the build information as a version string.
-func (i Information) Version() string {
-	return fmt.Sprintf("%s %s (branch: %s, shasum: %s, date: %s, go: %s)",
-		i["name"].(string),
-		i["version"].(string),
-		i["branch"].(string),
-		i["shasum"].(string),
-		i["date"].(string),
-		i["go"].(string),
+// String provides the build information as a string.
+func (i Information) String() string {
+	return fmt.Sprintf("%s %s (branch: %s, commit: %s, date: %s, go: %s)",
+		i.Name, i.Version, i.Branch, i.Commit, i.Date, i.Go,
 	)
 }

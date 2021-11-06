@@ -14,6 +14,7 @@
 
 package http // import "arcadium.dev/core/server/http"
 
+/*
 import (
 	"context"
 	"net"
@@ -108,3 +109,4 @@ func (s *Server) Handle(mux http.Handler) {
 	}
 	s.server.Handler = mux
 }
+*/

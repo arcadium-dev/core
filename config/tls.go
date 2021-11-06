@@ -14,8 +14,6 @@
 
 package config // import "arcadium.dev/core/config"
 
-//go:generate mockgen -package mockconfig -destination ./mock/tls.go . TLS
-
 import (
 	"crypto/tls"
 	"crypto/x509"

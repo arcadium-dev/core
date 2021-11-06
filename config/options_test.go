@@ -22,20 +22,20 @@ func TestOptionsWithPrefix(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Test WithPrefix - empty prefix", func(t *testing.T) {
-		opts := &Options{}
+		opts := &options{}
 
-		WithPrefix("").Apply(opts)
-		if opts.Prefix() != "" {
+		WithPrefix("").apply(opts)
+		if opts.prefix != "" {
 			t.Error("prefix should be empty")
 		}
 	})
 
 	t.Run("Test WithPrefix - non-empty prefix", func(t *testing.T) {
-		opts := &Options{}
+		opts := &options{}
 
-		WithPrefix("prefix").Apply(opts)
-		if opts.Prefix() != "prefix_" {
-			t.Errorf("incorrect prefix: %s", opts.Prefix())
+		WithPrefix("prefix").apply(opts)
+		if opts.prefix != "prefix_" {
+			t.Errorf("incorrect prefix: %s", opts.prefix)
 		}
 	})
 }

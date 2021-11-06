@@ -14,24 +14,9 @@
 
 package server
 
-import (
-	"errors"
-	"testing"
+// mocklog "arcadium.dev/core/log/mock"
 
-	"github.com/golang/mock/gomock"
-
-	mockgrpc "arcadium.dev/core/grpc/mock"
-	mockhttp "arcadium.dev/core/http/mock"
-	mocklog "arcadium.dev/core/log/mock"
-	mocksql "arcadium.dev/core/sql/mock"
-
-	"arcadium.dev/core/config"
-	"arcadium.dev/core/grpc"
-	"arcadium.dev/core/http"
-	"arcadium.dev/core/log"
-	"arcadium.dev/core/sql"
-)
-
+/*
 func TestNewServerConfigSuccess(t *testing.T) {
 	t.Parallel()
 
@@ -140,3 +125,4 @@ func TestNewServerConfigFailures(t *testing.T) {
 		}
 	})
 }
+*/

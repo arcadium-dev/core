@@ -14,31 +14,9 @@
 
 package server
 
-import (
-	"context"
-	"errors"
-	"fmt"
-	nethttp "net/http"
-	"testing"
-	"time"
-
-	"github.com/golang/mock/gomock"
-
-	mockgrpc "arcadium.dev/core/grpc/mock"
-	mockhttp "arcadium.dev/core/http/mock"
-	mocklog "arcadium.dev/core/log/mock"
-	mocksql "arcadium.dev/core/sql/mock"
-
-	"arcadium.dev/core/build"
-	"arcadium.dev/core/config"
-	"arcadium.dev/core/grpc"
-	"arcadium.dev/core/http"
-	"arcadium.dev/core/log"
-	"arcadium.dev/core/sql"
-)
-
 //---- New ----
 
+/*
 func TestNewSuccess(t *testing.T) {
 	t.Parallel()
 
@@ -375,3 +353,4 @@ func (s mockHTTPServer) Serve(result chan<- error) {
 
 func (s mockHTTPServer) Stop()                  {}
 func (s mockHTTPServer) Handle(nethttp.Handler) {}
+*/

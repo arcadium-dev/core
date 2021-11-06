@@ -12,12 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package log // import "arcadium.dev/core/log"
+package test // import "arcadium.dev/core/test
 
-//go:generate mockgen -package mocklog -destination ./mock/config.go . Config
+import "testing"
 
-// Config provides the configuration for a logger.
-type Config interface {
-	// Level returns the configured log level.
-	Level() string
+// Env is a test helper to facilitate setting up environment variables.
+type Env map[string]string
+
+// Set places the environment variables in Env in the environment.  The
+// environment variables are automatically cleaned up after test completion.
+func (e Env) Set(t *testing.T) {
+	for k, v := range e {
+		t.Setenv(k, v)
+	}
 }
