@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package envconfig // import "arcadium.dev/core/config/envconfig
+package config // import "arcadium.dev/core/config/config
 
 import (
 	"net/url"
 
 	"github.com/kelseyhightower/envconfig"
 
-	"arcadium.dev/core/config"
 	"arcadium.dev/core/errors"
 )
 
@@ -47,12 +46,12 @@ type (
 )
 
 // NewPostgres returns the postgres configuration.
-func NewPostgres(opts ...config.Option) (*Postgres, error) {
-	o := &config.Options{}
+func NewPostgres(opts ...Option) (*Postgres, error) {
+	o := &options{}
 	for _, opt := range opts {
-		opt.Apply(o)
+		opt.apply(o)
 	}
-	prefix := o.Prefix() + postgresPrefix
+	prefix := o.prefix + postgresPrefix
 
 	config := struct {
 		DB             string `required:"true"`

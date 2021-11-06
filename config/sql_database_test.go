@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package envconfig
+package config
 
 import (
 	"testing"
 
-	"arcadium.dev/core/config"
+	"arcadium.dev/core/test"
 )
 
 func TestNewConfig(t *testing.T) {
 	t.Run("Test default driver", func(t *testing.T) {
-		cfg := setupSQLDatabase(t, config.Env(map[string]string{
+		cfg := setupSQLDatabase(t, test.Env(map[string]string{
 			"POSTGRES_DB":   "db",
 			"POSTGRES_HOST": "host",
 		}))
@@ -32,7 +32,7 @@ func TestNewConfig(t *testing.T) {
 	})
 
 	t.Run("Test postgres driver", func(t *testing.T) {
-		cfg := setupSQLDatabase(t, config.Env(map[string]string{
+		cfg := setupSQLDatabase(t, test.Env(map[string]string{
 			"SQL_DATABASE_DRIVER": "postgres",
 			"POSTGRES_DB":         "db",
 			"POSTGRES_HOST":       "host",
@@ -43,18 +43,18 @@ func TestNewConfig(t *testing.T) {
 	})
 
 	t.Run("Test WithPrefix", func(t *testing.T) {
-		cfg := setupSQLDatabase(t, config.Env(map[string]string{
+		cfg := setupSQLDatabase(t, test.Env(map[string]string{
 			"FOO_SQL_DATABASE_DRIVER": "pgx",
 			"FOO_POSTGRES_DB":         "db",
 			"FOO_POSTGRES_HOST":       "host",
-		}), config.WithPrefix("foo"))
+		}), WithPrefix("foo"))
 		if cfg.DriverName() != "pgx" {
 			t.Errorf("Incorrect sql database config for a valid environment: %s", cfg.DriverName())
 		}
 	})
 
 	t.Run("Test unsupported driver", func(t *testing.T) {
-		e := config.Env(map[string]string{
+		e := test.Env(map[string]string{
 			"SQL_DATABASE_DRIVER": "mysql",
 		})
 		e.Set(t)
@@ -72,7 +72,7 @@ func TestNewConfig(t *testing.T) {
 	})
 }
 
-func setupSQLDatabase(t *testing.T, e config.Env, opts ...config.Option) *SQLDatabase {
+func setupSQLDatabase(t *testing.T, e test.Env, opts ...Option) *SQLDatabase {
 	t.Helper()
 
 	e.Set(t)

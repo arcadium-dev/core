@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package envconfig
+package config
 
 import (
 	"testing"
 
-	"arcadium.dev/core/config"
+	"arcadium.dev/core/test"
 )
 
 func TestPostgres(t *testing.T) {
 	t.Run("Minimal Env", func(t *testing.T) {
-		cfg := setupPostgres(t, config.Env(map[string]string{
+		cfg := setupPostgres(t, test.Env(map[string]string{
 			"POSTGRES_DB":   "db",
 			"POSTGRES_HOST": "host",
 		}))
@@ -34,7 +34,7 @@ func TestPostgres(t *testing.T) {
 	})
 
 	t.Run("Full Env", func(t *testing.T) {
-		cfg := setupPostgres(t, config.Env(map[string]string{
+		cfg := setupPostgres(t, test.Env(map[string]string{
 			"POSTGRES_DB":              "db",
 			"POSTGRES_USER":            "user",
 			"POSTGRES_PASSWORD":        "password",
@@ -54,14 +54,14 @@ func TestPostgres(t *testing.T) {
 	})
 
 	t.Run("Partial Env", func(t *testing.T) {
-		cfg := setupPostgres(t, config.Env(map[string]string{
+		cfg := setupPostgres(t, test.Env(map[string]string{
 			"FOO_POSTGRES_DB":       "players",
 			"FOO_POSTGRES_USER":     "arcadium",
 			"FOO_POSTGRES_PASSWORD": "password",
 			"FOO_POSTGRES_HOST":     "postgres",
 			"FOO_POSTGRES_PORT":     "5432",
 			"FOO_POSTGRES_SSLMODE":  "disable",
-		}), config.WithPrefix("foo"))
+		}), WithPrefix("foo"))
 
 		expectedDSN := "postgres://arcadium:password@postgres:5432/players?sslmode=disable"
 		if cfg.DSN() != expectedDSN {
@@ -87,7 +87,7 @@ func TestPostgresFailure(t *testing.T) {
 	})
 
 	t.Run("Missing Host", func(t *testing.T) {
-		e := config.Env(map[string]string{
+		e := test.Env(map[string]string{
 			"POSTGRES_DB": "players",
 		})
 		e.Set(t)
@@ -107,7 +107,7 @@ func TestPostgresFailure(t *testing.T) {
 	})
 }
 
-func setupPostgres(t *testing.T, e config.Env, opts ...config.Option) *Postgres {
+func setupPostgres(t *testing.T, e test.Env, opts ...Option) *Postgres {
 	t.Helper()
 
 	e.Set(t)

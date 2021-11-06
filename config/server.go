@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package envconfig // import "arcadium.dev/core/config/envconfig
+package config // import "arcadium.dev/core/config/config
 
 import (
-	"arcadium.dev/core/config"
 	"github.com/kelseyhightower/envconfig"
 
 	"arcadium.dev/core/errors"
@@ -36,12 +35,12 @@ type (
 )
 
 // NewServer returns the server configuration.
-func NewServer(opts ...config.Option) (*Server, error) {
-	o := &config.Options{}
+func NewServer(opts ...Option) (*Server, error) {
+	o := &options{}
 	for _, opt := range opts {
-		opt.Apply(o)
+		opt.apply(o)
 	}
-	prefix := o.Prefix() + serverPrefix
+	prefix := o.prefix + serverPrefix
 
 	config := struct {
 		Addr   string
@@ -66,17 +65,17 @@ func (s *Server) Addr() string {
 	return s.addr
 }
 
-// Cert returns the filename of the certificate.
+// Cert returns the filepath of the certificate.
 func (s *Server) Cert() string {
 	return s.cert
 }
 
-// Key returns the filename of the certificate key.
+// Key returns the filepath of the certificate key.
 func (s *Server) Key() string {
 	return s.key
 }
 
-// CACert returns the filename of the certificate of the client CA.
+// CACert returns the filepath of the certificate of the client CA.
 // This is used when a mutual TLS connection is desired.
 func (s *Server) CACert() string {
 	return s.cacert

@@ -14,6 +14,7 @@
 
 package http // import "arcadium.dev/core/server/http"
 
+/*
 import (
 	"crypto/tls"
 
@@ -52,3 +53,4 @@ func WithLogger(l log.Logger) Option {
 		s.logger = l
 	})
 }
+*/

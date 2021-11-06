@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package envconfig // import "arcadium.dev/core/config/envconfig
+package config // import "arcadium.dev/core/config/config
 
 import (
 	"github.com/kelseyhightower/envconfig"
 
-	"arcadium.dev/core/config"
 	"arcadium.dev/core/errors"
 )
 
@@ -35,12 +34,12 @@ type (
 )
 
 // NewLogger returns the configuration of a logger.
-func NewLogger(opts ...config.Option) (*Logger, error) {
-	o := &config.Options{}
+func NewLogger(opts ...Option) (*Logger, error) {
+	o := &options{}
 	for _, opt := range opts {
-		opt.Apply(o)
+		opt.apply(o)
 	}
-	prefix := o.Prefix() + logPrefix
+	prefix := o.prefix + logPrefix
 
 	config := struct {
 		Level  string

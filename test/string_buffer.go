@@ -12,14 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "arcadium.dev/core/config
+package test // import "arcadium.dev/core/test
 
-import "testing"
-
-type Env map[string]string
-
-func (e Env) Set(t *testing.T) {
-	for k, v := range e {
-		t.Setenv(k, v)
+type (
+	// StringBuffer implements a simple buffer that can be used in tests.  It
+	// implements the io.Writer interface. Each write will append a string
+	// to the Buffer.
+	StringBuffer struct {
+		Buffer []string
 	}
+)
+
+// NewStringBuffer returns a StringBuffer.
+func NewStringBuffer() *StringBuffer {
+	return &StringBuffer{Buffer: make([]string, 0)}
+}
+
+// Write implements the io.Writer interface.
+func (l *StringBuffer) Write(p []byte) (int, error) {
+	l.Buffer = append(l.Buffer, string(p))
+	return len(p), nil
 }

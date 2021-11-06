@@ -14,6 +14,7 @@
 
 package grpc // import "arcadium.dev/core/server/grpc"
 
+/*
 import (
 	"arcadium.dev/core/log"
 	"arcadium.dev/core/trace"
@@ -75,3 +76,4 @@ func WithTracer(t trace.Tracer) Option {
 		s.tracer = t
 	})
 }
+*/

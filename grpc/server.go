@@ -14,20 +14,7 @@
 
 package grpc // import "arcadium.dev/core/server/grpc"
 
-import (
-	"net"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/reflection"
-
-	"arcadium.dev/core/config"
-	"arcadium.dev/core/errors"
-	"arcadium.dev/core/log"
-	"arcadium.dev/core/trace"
-)
-
+/*
 type (
 	// Server is a gRPC server which will service gRPC requests.
 	Server struct {
@@ -129,3 +116,4 @@ func (s *Server) Register(services []Service) {
 		s.logger.WithFields(service.LogFields()).Info("registered")
 	}
 }
+*/

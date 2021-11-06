@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package envconfig // import "arcadium.dev/core/config/envconfig
+package config // import "arcadium.dev/core/config/config
 
 import (
 	"strings"
 
-	"arcadium.dev/core/config"
 	"github.com/kelseyhightower/envconfig"
 
 	"arcadium.dev/core/errors"
@@ -41,12 +40,12 @@ type (
 )
 
 // NewSQLDatabase returns the configuration of an SQL database.
-func NewSQLDatabase(opts ...config.Option) (*SQLDatabase, error) {
-	o := &config.Options{}
+func NewSQLDatabase(opts ...Option) (*SQLDatabase, error) {
+	o := &options{}
 	for _, opt := range opts {
-		opt.Apply(o)
+		opt.apply(o)
 	}
-	prefix := o.Prefix() + sqlPrefix
+	prefix := o.prefix + sqlPrefix
 
 	config := struct {
 		Driver string `default:"pgx"`

@@ -14,6 +14,7 @@
 
 package server
 
+/*
 //go:generate mockgen -package mockserver -destination ./mock/server.go . GRPCServer,HTTPServer
 
 import (
@@ -228,3 +229,4 @@ func (e Errors) Error() string {
 	}
 	return msg
 }
+*/
