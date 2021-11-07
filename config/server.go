@@ -26,16 +26,24 @@ const (
 
 type (
 	// Server holds the configuration settings for a server.
-	Server struct {
-		addr   string // <PREFIX_>SERVER_ADDR
-		cert   string // <PREFIX_>SERVER_CERT
-		key    string // <PREFIX_>SERVER_KEY
-		cacert string // <PREFIX_>SERVER_CACERT
+	Server interface {
+		// Addr returns the network address the server will listen on.
+		Addr() string
+
+		// Cert returns the filepath of the certificate.
+		Cert() string
+
+		// Key returns the filepath of the certificate key.
+		Key() string
+
+		// CACert returns the filepath of the certificate of the client CA.
+		// This is used when a mutual TLS connection is desired.
+		CACert() string
 	}
 )
 
 // NewServer returns the server configuration.
-func NewServer(opts ...Option) (*Server, error) {
+func NewServer(opts ...Option) (Server, error) {
 	o := &options{}
 	for _, opt := range opts {
 		opt.apply(o)
@@ -52,7 +60,7 @@ func NewServer(opts ...Option) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to load %s configuration", prefix)
 	}
 
-	return &Server{
+	return &server{
 		addr:   config.Addr,
 		cert:   config.Cert,
 		key:    config.Key,
@@ -60,23 +68,30 @@ func NewServer(opts ...Option) (*Server, error) {
 	}, nil
 }
 
-// Addr returns the network address the server will listen on.
-func (s *Server) Addr() string {
+type (
+	server struct {
+		addr   string // <PREFIX_>SERVER_ADDR
+		cert   string // <PREFIX_>SERVER_CERT
+		key    string // <PREFIX_>SERVER_KEY
+		cacert string // <PREFIX_>SERVER_CACERT
+	}
+)
+
+func (s *server) Addr() string {
 	return s.addr
 }
 
-// Cert returns the filepath of the certificate.
-func (s *Server) Cert() string {
+func (s *server) Cert() string {
 	return s.cert
 }
 
 // Key returns the filepath of the certificate key.
-func (s *Server) Key() string {
+func (s *server) Key() string {
 	return s.key
 }
 
 // CACert returns the filepath of the certificate of the client CA.
 // This is used when a mutual TLS connection is desired.
-func (s *Server) CACert() string {
+func (s *server) CACert() string {
 	return s.cacert
 }

@@ -70,9 +70,8 @@ func TestServer(t *testing.T) {
 	})
 }
 
-func setupServer(t *testing.T, e test.Env, opts ...Option) *Server {
+func setupServer(t *testing.T, e test.Env, opts ...Option) Server {
 	t.Helper()
-
 	e.Set(t)
 
 	cfg, err := NewServer(opts...)

@@ -72,9 +72,8 @@ func TestNewConfig(t *testing.T) {
 	})
 }
 
-func setupSQLDatabase(t *testing.T, e test.Env, opts ...Option) *SQLDatabase {
+func setupSQLDatabase(t *testing.T, e test.Env, opts ...Option) SQLDatabase {
 	t.Helper()
-
 	e.Set(t)
 
 	cfg, err := NewSQLDatabase(opts...)
