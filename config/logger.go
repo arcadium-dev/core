@@ -25,16 +25,19 @@ const (
 )
 
 type (
-	// Logger holds the configuration settings for a logger.
-	Logger struct {
-		level  string // <PREFIX_>LOG_LEVEL
-		file   string // <PREFIX_>LOG_FILE
-		format string // <PREFIX_>LOG_FORMAT
+	// Logger provides the configuration settings for a logger.
+	Logger interface {
+		// Level returns the configured log level.
+		Level() string
+		// File returns the configured log file.
+		File() string
+		// Format returns the configured log format.
+		Format() string
 	}
 )
 
 // NewLogger returns the configuration of a logger.
-func NewLogger(opts ...Option) (*Logger, error) {
+func NewLogger(opts ...Option) (Logger, error) {
 	o := &options{}
 	for _, opt := range opts {
 		opt.apply(o)
@@ -49,24 +52,29 @@ func NewLogger(opts ...Option) (*Logger, error) {
 	if err := envconfig.Process(prefix, &config); err != nil {
 		return nil, errors.Wrapf(err, "failed to load %s configuration", prefix)
 	}
-	return &Logger{
+	return &logger{
 		level:  config.Level,
 		file:   config.File,
 		format: config.Format,
 	}, nil
 }
 
-// Level returns the configured log level.
-func (l *Logger) Level() string {
+type (
+	logger struct {
+		level  string // <PREFIX_>LOG_LEVEL
+		file   string // <PREFIX_>LOG_FILE
+		format string // <PREFIX_>LOG_FORMAT
+	}
+)
+
+func (l *logger) Level() string {
 	return l.level
 }
 
-// File returns the configured log file.
-func (l *Logger) File() string {
+func (l *logger) File() string {
 	return l.file
 }
 
-// Format returns the configured log format.
-func (l *Logger) Format() string {
+func (l *logger) Format() string {
 	return l.format
 }

@@ -64,7 +64,7 @@ func TestLogger(t *testing.T) {
 	})
 }
 
-func setupLogger(t *testing.T, e test.Env, opts ...Option) *Logger {
+func setupLogger(t *testing.T, e test.Env, opts ...Option) Logger {
 	t.Helper()
 	e.Set(t)
 
