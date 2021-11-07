@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package test // import "arcadium.dev/core/test
+package test // import "arcadium.dev/core/test"
 
 type (
 	// StringBuffer implements a simple buffer that can be used in tests.  It

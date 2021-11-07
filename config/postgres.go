@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "arcadium.dev/core/config/config
+package config // import "arcadium.dev/core/config/config"
 
 import (
 	"net/url"
