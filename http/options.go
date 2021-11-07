@@ -14,11 +14,9 @@
 
 package http // import "arcadium.dev/core/server/http"
 
-/*
 import (
 	"crypto/tls"
-
-	"arcadium.dev/core/log"
+	"time"
 )
 
 type (
@@ -26,7 +24,23 @@ type (
 	Option interface {
 		apply(*Server)
 	}
+)
 
+// WithTLS will configure the server to require TLS.
+func WithTLS(cfg *tls.Config) Option {
+	return newOption(func(s *Server) {
+		s.server.TLSConfig = cfg
+	})
+}
+
+// WithTimeout sets the timout for stopping the server.
+func WithTimeout(timeout time.Duration) Option {
+	return newOption(func(s *Server) {
+		s.timeout = timeout
+	})
+}
+
+type (
 	option struct {
 		f func(*Server)
 	}
@@ -39,18 +53,3 @@ func newOption(f func(*Server)) option {
 func (o option) apply(s *Server) {
 	o.f(s)
 }
-
-// WithTLS will configure the server to require TLS.
-func WithTLS(cfg *tls.Config) Option {
-	return newOption(func(s *Server) {
-		s.server.TLSConfig = cfg
-	})
-}
-
-// WithLogger will add logging to the http server.
-func WithLogger(l log.Logger) Option {
-	return newOption(func(s *Server) {
-		s.logger = l
-	})
-}
-*/

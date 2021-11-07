@@ -42,11 +42,6 @@ tidy:
 	@printf "\nRunning go mod tidy...\n"
 	@go mod tidy
 
-#.PHONY: generate
-#generate:
-#	@printf "\nRunning go generate...\n"
-#	@go generate -x ./...
-
 .PHONY: lint
 lint: fmt tidy
 	@printf "\nChecking for changed files...\n"

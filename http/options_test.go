@@ -14,12 +14,10 @@
 
 package http
 
-/*
 import (
 	"crypto/tls"
 	"net/http"
 	"testing"
-	// mocklog "arcadium.dev/core/log/mock"
 )
 
 func TestServerWithTLS(t *testing.T) {
@@ -33,18 +31,3 @@ func TestServerWithTLS(t *testing.T) {
 		t.Error("failed to set TLSConfig")
 	}
 }
-
-func TestServerWithLogger(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockLogger := mocklog.NewMockLogger(ctrl)
-
-	s := &Server{}
-
-	WithLogger(mockLogger).apply(s)
-
-	if s.logger != mockLogger {
-		t.Error("failed to set logger")
-	}
-}
-*/

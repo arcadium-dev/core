@@ -12,11 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package trace // import "arcadium.dev/core/trace"
+package mock // import "arcadium.dev/core/mock"
 
-//go:generate mockgen -package mocktrace -destination ./mock/tracer.go . Tracer
+import (
+	"arcadium.dev/core/log"
+	"arcadium.dev/core/test"
+)
 
-// Tracer implements
-type Tracer interface {
-	// TODO
+type (
+	// Logger is a mock implementation of the logger.
+	Logger struct {
+		Buffer *test.StringBuffer
+		log.Logger
+	}
+)
+
+// NewLogger returns a mock logger that uses a string buffer to gather logs.
+func NewLogger(opts ...log.Option) (*Logger, error) {
+	var err error
+
+	logger := &Logger{
+		Buffer: test.NewStringBuffer(),
+	}
+	opts = append(opts, log.WithOutput(logger.Buffer))
+	logger.Logger, err = log.New(opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return logger, nil
 }
