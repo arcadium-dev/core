@@ -17,39 +17,49 @@ package http // import "arcadium.dev/core/server/http"
 import (
 	"crypto/tls"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type (
-	// Option provides options for configuring the creation of a http server.
-	Option interface {
+	// ServerOption provides options for configuring the creation of a http server.
+	ServerOption interface {
 		apply(*Server)
 	}
 )
 
 // WithTLS will configure the server to require TLS.
-func WithTLS(cfg *tls.Config) Option {
-	return newOption(func(s *Server) {
+func WithTLS(cfg *tls.Config) ServerOption {
+	return newServerOption(func(s *Server) {
 		s.server.TLSConfig = cfg
 	})
 }
 
-// WithTimeout sets the timout for stopping the server.
-func WithTimeout(timeout time.Duration) Option {
-	return newOption(func(s *Server) {
-		s.timeout = timeout
+// WithShutdownTimeout sets the timout for shutting down the server.
+func WithShutdownTimeout(timeout time.Duration) ServerOption {
+	return newServerOption(func(s *Server) {
+		s.shutdownTimeout = timeout
+	})
+}
+
+// WithMetrics provides generic request counters to the server.
+func WithMetrics(requestCount, requestSeconds *prometheus.CounterVec) ServerOption {
+	return newServerOption(func(s *Server) {
+		s.requestCount = requestCount
+		s.requestSeconds = requestSeconds
 	})
 }
 
 type (
-	option struct {
+	serverOption struct {
 		f func(*Server)
 	}
 )
 
-func newOption(f func(*Server)) option {
-	return option{f: f}
+func newServerOption(f func(*Server)) serverOption {
+	return serverOption{f: f}
 }
 
-func (o option) apply(s *Server) {
+func (o serverOption) apply(s *Server) {
 	o.f(s)
 }

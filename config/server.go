@@ -27,18 +27,9 @@ const (
 type (
 	// Server holds the configuration settings for a server.
 	Server interface {
+		TLS
 		// Addr returns the network address the server will listen on.
 		Addr() string
-
-		// Cert returns the filepath of the certificate.
-		Cert() string
-
-		// Key returns the filepath of the certificate key.
-		Key() string
-
-		// CACert returns the filepath of the certificate of the client CA.
-		// This is used when a mutual TLS connection is desired.
-		CACert() string
 	}
 )
 

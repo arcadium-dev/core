@@ -20,7 +20,7 @@ import (
 	"testing"
 )
 
-func TestServerWithTLS(t *testing.T) {
+func TestWithTLS(t *testing.T) {
 	s := &Server{
 		server: &http.Server{},
 	}

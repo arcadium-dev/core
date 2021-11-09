@@ -22,17 +22,25 @@ import (
 	"arcadium.dev/core/errors"
 )
 
-// TLS contains the information necessary to create a tls.Config.
-type TLS interface {
-	// Cert returns the file name of the PEM encoded public key.
-	Cert() string
+type (
+	// TLS contains the information necessary to create a tls.Config.
+	TLS interface {
+		// Cert returns the filepath of the certificate.
+		Cert() string
 
-	// Key returns the file name of the PEM encoded private key.
-	Key() string
+		// Key returns the filepath of the certificate key.
+		Key() string
 
-	// CACert returns the file name of the PEM encoded public key of the client CA.
-	CACert() string
-}
+		// CACert returns the filepath of the certificate of the client CA.
+		// This is used when a mutual TLS connection is desired.
+		CACert() string
+	}
+
+	// TLSOption provides options for configuring the creation of a tls.Config.
+	TLSOption interface {
+		apply(*tls.Config)
+	}
+)
 
 // NewTLS will create a *tls.Config given the config and options. This will
 // return an error if there is a problem loading the required certificate files.
@@ -68,12 +76,14 @@ func NewTLS(config TLS, opts ...TLSOption) (*tls.Config, error) {
 	return cfg, nil
 }
 
-type (
-	// TLSOption provides options for configuring the creation of a tls.Config.
-	TLSOption interface {
-		apply(*tls.Config)
-	}
+// WithMTLS will setup the tls.Config to require and verify client connections.
+func WithMTLS() TLSOption {
+	return newTLSOption(func(cfg *tls.Config) {
+		cfg.ClientAuth = tls.RequireAndVerifyClientCert
+	})
+}
 
+type (
 	tlsOption struct {
 		f func(*tls.Config)
 	}
@@ -85,11 +95,4 @@ func newTLSOption(f func(*tls.Config)) tlsOption {
 
 func (o tlsOption) apply(cfg *tls.Config) {
 	o.f(cfg)
-}
-
-// WithMTLS will setup the tls.Config to require and verify client connections.
-func WithMTLS() TLSOption {
-	return newTLSOption(func(cfg *tls.Config) {
-		cfg.ClientAuth = tls.RequireAndVerifyClientCert
-	})
 }

@@ -31,11 +31,15 @@ import (
 	"arcadium.dev/core/log"
 )
 
+const (
+	defaultShutdownTimeout = 10 * time.Second
+)
+
 type (
-	// Server ... FIXME
+	// Server represents an HTTP server.
 	Server struct {
-		addr    string
-		timeout time.Duration
+		addr            string
+		shutdownTimeout time.Duration
 
 		requestCount   *prometheus.CounterVec
 		requestSeconds *prometheus.CounterVec
@@ -46,10 +50,11 @@ type (
 		router   *mux.Router
 	}
 
-	// Service ... FIXME
+	// Service defines the methods required by the Server to register with
+	// the service with the router.
 	Service interface {
-		// Register will register this service with the given http server.
-		Register(server *Server)
+		// Register will register this service with the given router.
+		Register(router *mux.Router)
 
 		// Fields provides a set of fields for logging.
 		Fields() []interface{}
@@ -67,11 +72,11 @@ type (
 // New creates an HTTP server with and has not started to accept requests yet.
 func New(cfg Config, logger log.Logger, opts ...Option) *Server {
 	s := &Server{
-		addr:    cfg.Addr(),
-		logger:  logger,
-		server:  &http.Server{},
-		router:  mux.NewRouter(),
-		timeout: 10 * time.Second,
+		addr:            cfg.Addr(),
+		logger:          logger,
+		server:          &http.Server{},
+		router:          mux.NewRouter(),
+		shutdownTimeout: defaultShutdownTimeout,
 	}
 
 	// Load options.
@@ -100,10 +105,10 @@ func New(cfg Config, logger log.Logger, opts ...Option) *Server {
 	return s
 }
 
-// Register ... FIXME
+// Register associates the given services with the router.
 func (s *Server) Register(services ...Service) {
 	for _, service := range services {
-		service.Register(s)
+		service.Register(s.router)
 		s.logger.Info(append([]interface{}{"msg", "registered"}, service.Fields()...))
 	}
 }
@@ -139,19 +144,19 @@ func ListenAndServeMetrics() error {
 	return http.ListenAndServe(":6060", h)
 }
 
-// Close shuts down the http server gracefully without interrupting any active connections.
-func (s *Server) Close() {
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(s.timeout))
+// Shutdown stops the http server gracefully without interrupting any active connections.
+func (s *Server) Shutdown() {
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(s.shutdownTimeout))
 	defer cancel()
 
 	if err := s.server.Shutdown(ctx); err != nil {
 		s.logger.Error("msg", "Failed to shutdown", "error", err.Error())
 	}
-
-	s.logger.Info("msg", "stopped")
+	s.logger.Info("msg", "shutdown")
 }
 
-// requestLogging is middleware ... FIXME
+// requestLogging is middleware to create a request specific logger, passing
+// in through the request's context, as well as log the incoming request.
 func (s *Server) requestLogging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := []interface{}{
@@ -174,7 +179,8 @@ func (s *Server) requestLogging(next http.Handler) http.Handler {
 	})
 }
 
-// requestMetrics is middleware ... FIXME
+// requestMetrics is middleware to update the generic http metrics for
+// each incoming request.
 func (s *Server) requestMetrics(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Obtain path template & start time of request.
@@ -185,8 +191,12 @@ func (s *Server) requestMetrics(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 
 		// Increment the count and track total time.
-		s.requestCount.WithLabelValues(r.Method, tmpl).Inc()
-		s.requestSeconds.WithLabelValues(r.Method, tmpl).Add(float64(time.Since(t).Seconds()))
+		if s.requestCount != nil {
+			s.requestCount.WithLabelValues(r.Method, tmpl).Inc()
+		}
+		if s.requestSeconds != nil {
+			s.requestSeconds.WithLabelValues(r.Method, tmpl).Add(float64(time.Since(t).Seconds()))
+		}
 	})
 }
 
