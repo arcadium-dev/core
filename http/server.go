@@ -12,37 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package http // import "arcadium.dev/core/server/http"
+package http // import "arcadium.dev/core/http"
 
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
-	_ "net/http/pprof" // Provide pprof profiling data.
+	"runtime"
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"arcadium.dev/core/config"
 	"arcadium.dev/core/errors"
 	"arcadium.dev/core/log"
 )
 
 const (
+	defaultAddr            = ":8443"
 	defaultShutdownTimeout = 10 * time.Second
 )
+
+var (
+	defaultLogger log.Logger
+)
+
+func init() {
+	defaultLogger, _ = log.New(log.WithFormat(log.FormatNop))
+}
 
 type (
 	// Server represents an HTTP server.
 	Server struct {
 		addr            string
 		shutdownTimeout time.Duration
-
-		requestCount   *prometheus.CounterVec
-		requestSeconds *prometheus.CounterVec
 
 		logger   log.Logger
 		listener net.Listener
@@ -59,25 +63,18 @@ type (
 		// Fields provides a set of fields for logging.
 		Fields() []interface{}
 	}
-
-	// Config contains the information necessary to create an HTTP server
-	Config interface {
-		config.TLS
-
-		// Addr returns that network address the server listens to.
-		Addr() string
-	}
 )
 
-// New creates an HTTP server with and has not started to accept requests yet.
-func New(cfg Config, logger log.Logger, opts ...Option) *Server {
+// NewServer creates an HTTP server with and has not started to accept requests yet.
+func NewServer(opts ...ServerOption) *Server {
 	s := &Server{
-		addr:            cfg.Addr(),
-		logger:          logger,
+		addr:            defaultAddr,
+		logger:          defaultLogger,
 		server:          &http.Server{},
 		router:          mux.NewRouter(),
 		shutdownTimeout: defaultShutdownTimeout,
 	}
+	s.server.Handler = s.router
 
 	// Load options.
 	for _, opt := range opts {
@@ -85,45 +82,46 @@ func New(cfg Config, logger log.Logger, opts ...Option) *Server {
 	}
 
 	// Set up the logging fields.
-	fields := []interface{}{
+	msg := []interface{}{
+		"msg", "http server created",
 		"addr", s.addr,
 	}
 	if s.server.TLSConfig != nil {
 		if s.server.TLSConfig.ClientAuth == tls.RequireAndVerifyClientCert {
-			fields = append(fields, "mtls", "enabled")
+			msg = append(msg, "mtls", "enabled")
 		} else {
-			fields = append(fields, "tls", "enabled")
+			msg = append(msg, "tls", "enabled")
 		}
 	}
-	s.logger = s.logger.With(fields...)
+	s.logger.Info(msg...)
 
-	// Setup middleware.
+	s.router.Use(s.recoverPanics)
 	s.router.Use(s.requestLogging)
-	s.router.Use(s.requestMetrics)
-	s.router.Use(s.catchPanic)
 
 	return s
 }
 
 // Register associates the given services with the router.
 func (s *Server) Register(services ...Service) {
+	r := s.router.PathPrefix("/").Subrouter()
 	for _, service := range services {
-		service.Register(s.router)
-		s.logger.Info(append([]interface{}{"msg", "registered"}, service.Fields()...))
+		service.Register(r)
+		s.logger.Info(
+			append([]interface{}{"msg", "service registered"}, service.Fields()...)...,
+		)
 	}
 }
 
 // Serve accepts incoming connections, creating a new service goroutine for each. The
 // service goroutine reads requests and then call the handler to reply to them.
 func (s *Server) Serve() error {
-	s.logger.Info("msg", "serving")
-	defer s.logger.Info("msg", "serving complete")
-
 	var err error
 	if s.listener, err = net.Listen("tcp", s.addr); err != nil {
 		return errors.Wrapf(err, "Failed to listen on %s", s.addr)
 	}
-	s.logger.Info("msg", "listening")
+
+	s.logger.Info("msg", "begin serving", "addr", s.addr)
+	defer s.logger.Info("msg", "serving complete", "addr", s.addr)
 
 	if s.server.TLSConfig != nil {
 		err = s.server.ServeTLS(s.listener, "", "")
@@ -137,13 +135,6 @@ func (s *Server) Serve() error {
 	return err
 }
 
-// ListenAndServeMetrics runs an HTTP server with /metrics endpoints (e.g. pprof).
-func ListenAndServeMetrics() error {
-	h := http.NewServeMux()
-	h.Handle("/metrics", promhttp.Handler())
-	return http.ListenAndServe(":6060", h)
-}
-
 // Shutdown stops the http server gracefully without interrupting any active connections.
 func (s *Server) Shutdown() {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(s.shutdownTimeout))
@@ -155,6 +146,30 @@ func (s *Server) Shutdown() {
 	s.logger.Info("msg", "shutdown")
 }
 
+// recoverPanics is middleware for recovering and reporting panics.
+func (s *Server) recoverPanics(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Install the recovery and reporting function.
+		defer func() {
+			if err := recover(); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				msg := []interface{}{
+					"msg", "recovering from a panic",
+					"req", fmt.Sprintf("%+v", *r),
+				}
+				s.logger.Error(msg...)
+
+				buf := make([]byte, 4096)
+				n := runtime.Stack(buf, false)
+				buf = buf[:n]
+				s.logger.Error("stacktrace", fmt.Sprintf("%s", string(buf)))
+			}
+		}()
+		// Delegate to next handler in middleware chain.
+		next.ServeHTTP(w, r)
+	})
+}
+
 // requestLogging is middleware to create a request specific logger, passing
 // in through the request's context, as well as log the incoming request.
 func (s *Server) requestLogging(next http.Handler) http.Handler {
@@ -163,69 +178,11 @@ func (s *Server) requestLogging(next http.Handler) http.Handler {
 			"method", r.Method,
 			"url", r.URL.String(),
 		}
-		if len(r.Host) != 0 {
-			fields = append(fields, r.Host)
-		}
-		if len(r.Header.Get("User-Agent")) != 0 {
-			fields = append(fields, "user-agent", r.Header.Get("User-Agent"))
-		}
-
 		l := s.logger.With(fields...)
 		req := r.Clone(log.NewContextWithLogger(r.Context(), l))
 
-		l.Debug("msg", "start")
+		l.Info("msg", "request start")
 		next.ServeHTTP(w, req)
-		l.Debug("msg", "stop")
+		l.Info("msg", "request stop")
 	})
-}
-
-// requestMetrics is middleware to update the generic http metrics for
-// each incoming request.
-func (s *Server) requestMetrics(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Obtain path template & start time of request.
-		t := time.Now()
-		tmpl := requestPathTemplate(r)
-
-		// Delegate to next handler in middleware chain.
-		next.ServeHTTP(w, r)
-
-		// Increment the count and track total time.
-		if s.requestCount != nil {
-			s.requestCount.WithLabelValues(r.Method, tmpl).Inc()
-		}
-		if s.requestSeconds != nil {
-			s.requestSeconds.WithLabelValues(r.Method, tmpl).Add(float64(time.Since(t).Seconds()))
-		}
-	})
-}
-
-// recoverPanic is middleware for recovering and reporting panics.
-func (s *Server) catchPanic(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Install the recovery and reporting function.
-		defer func() {
-			if err := recover(); err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				e, ok := err.(error)
-				if ok {
-					s.logger.Error("msg", "panic", "error", e.Error())
-				} else {
-					s.logger.Error("msg", "panic")
-				}
-			}
-		}()
-		// Delegate to next handler in middleware chain.
-		next.ServeHTTP(w, r)
-	})
-}
-
-// requestPathTemplate returns the route path template for the given request.
-func requestPathTemplate(r *http.Request) string {
-	route := mux.CurrentRoute(r)
-	if route == nil {
-		return ""
-	}
-	tmpl, _ := route.GetPathTemplate()
-	return tmpl
 }

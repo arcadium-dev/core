@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package http // import "arcadium.dev/core/server/http"
+package http // import "arcadium.dev/core/http"
 
 import (
 	"crypto/tls"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
+	"arcadium.dev/core/log"
 )
 
 type (
@@ -28,25 +28,31 @@ type (
 	}
 )
 
-// WithTLS will configure the server to require TLS.
-func WithTLS(cfg *tls.Config) ServerOption {
+// WithServerAddr will configure the server with the listen address.
+func WithServerAddr(addr string) ServerOption {
+	return newServerOption(func(s *Server) {
+		s.addr = addr
+	})
+}
+
+// WithServerTLS will configure the server to require TLS.
+func WithServerTLS(cfg *tls.Config) ServerOption {
 	return newServerOption(func(s *Server) {
 		s.server.TLSConfig = cfg
 	})
 }
 
-// WithShutdownTimeout sets the timout for shutting down the server.
-func WithShutdownTimeout(timeout time.Duration) ServerOption {
+// WithServerShutdownTimeout sets the timout for shutting down the server.
+func WithServerShutdownTimeout(timeout time.Duration) ServerOption {
 	return newServerOption(func(s *Server) {
 		s.shutdownTimeout = timeout
 	})
 }
 
-// WithMetrics provides generic request counters to the server.
-func WithMetrics(requestCount, requestSeconds *prometheus.CounterVec) ServerOption {
+// WithServerLogger provides a logger to the server.
+func WithServerLogger(logger log.Logger) ServerOption {
 	return newServerOption(func(s *Server) {
-		s.requestCount = requestCount
-		s.requestSeconds = requestSeconds
+		s.logger = logger
 	})
 }
 

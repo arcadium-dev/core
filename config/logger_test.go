@@ -31,9 +31,9 @@ func TestLogger(t *testing.T) {
 
 	t.Run("Full Env", func(t *testing.T) {
 		cfg := setupLogger(t, test.Env(map[string]string{
-			"LOG_LEVEL":  "level",
+			"LOG_LEVEL":  "LEVEL",
 			"LOG_FILE":   "file",
-			"LOG_FORMAT": "format",
+			"LOG_FORMAT": "Format",
 		}))
 
 		if cfg.Level() != "level" || cfg.File() != "file" || cfg.Format() != "format" {

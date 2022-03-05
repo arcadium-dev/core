@@ -15,6 +15,8 @@
 package config // import "arcadium.dev/core/config/config"
 
 import (
+	"strings"
+
 	"github.com/kelseyhightower/envconfig"
 
 	"arcadium.dev/core/errors"
@@ -68,7 +70,7 @@ type (
 )
 
 func (l *logger) Level() string {
-	return l.level
+	return strings.ToLower(l.level)
 }
 
 func (l *logger) File() string {
@@ -76,5 +78,5 @@ func (l *logger) File() string {
 }
 
 func (l *logger) Format() string {
-	return l.format
+	return strings.ToLower(l.format)
 }

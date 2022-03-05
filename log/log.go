@@ -110,9 +110,10 @@ var (
 func New(opts ...Option) (Logger, error) {
 	l := &logger{
 		opts: options{
-			level:  LevelInfo,
-			format: FormatJSON,
-			writer: os.Stderr,
+			level:       LevelInfo,
+			format:      FormatJSON,
+			writer:      os.Stderr,
+			timestamped: true,
 		},
 	}
 
@@ -136,6 +137,9 @@ func New(opts ...Option) (Logger, error) {
 		l.logger = log.NewLogfmtLogger(log.NewSyncWriter(l.opts.writer))
 	case FormatNop:
 		l.logger = log.NewNopLogger()
+	}
+	if l.opts.timestamped {
+		l.logger = log.With(l.logger, "ts", log.DefaultTimestampUTC)
 	}
 
 	return l, nil
@@ -161,6 +165,14 @@ func WithFormat(format Format) Option {
 func WithOutput(writer io.Writer) Option {
 	return newOption(func(opts *options) {
 		opts.writer = writer
+	})
+}
+
+// WithoutTimestamp disables the use of a timestamp for logs.
+// Useful for unit tests.
+func WithoutTimestamp() Option {
+	return newOption(func(opts *options) {
+		opts.timestamped = false
 	})
 }
 
@@ -254,9 +266,10 @@ type (
 	}
 
 	options struct {
-		level  Level
-		format Format
-		writer io.Writer
+		level       Level
+		format      Format
+		writer      io.Writer
+		timestamped bool
 	}
 
 	option struct {

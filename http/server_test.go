@@ -12,134 +12,293 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package http
+package http // import "arcadium.dev/core/http"
 
-/*
 import (
-	"context"
 	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
-	"time"
 
-	"github.com/golang/mock/gomock"
+	"github.com/gorilla/mux"
 
 	"arcadium.dev/core/config"
-	mockhttp "arcadium.dev/core/http/mock"
+	"arcadium.dev/core/config/mock"
+	"arcadium.dev/core/log"
+	"arcadium.dev/core/test"
 )
 
-func TestServerNewWithTLS(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	ctrl.Finish()
+func TestServerNew(t *testing.T) {
+	t.Run("without options", func(t *testing.T) {
+		s := NewServer()
 
-	mockConfig := mockhttp.NewMockConfig(ctrl)
-	mockConfig.EXPECT().Addr().Return(":8080")
-	mockConfig.EXPECT().Cert().Return("../test/insecure/cert.pem")
-	mockConfig.EXPECT().Key().Return("../test/insecure/key.pem")
+		if s.addr != defaultAddr {
+			t.Errorf("\nExpected addr: %s\nActual addr:   %s", defaultAddr, s.addr)
+		}
+		if s.shutdownTimeout != defaultShutdownTimeout {
+			t.Errorf("\nExpected timeout: %+v\nActual timeout:   %+v", defaultAddr, s.addr)
+		}
+	})
 
-	tlsConfig, tlsErr := config.NewTLS(mockConfig)
-	if tlsErr != nil {
-		t.Errorf("received tls error: %s", tlsErr)
+	t.Run("without tls", func(t *testing.T) {
+		b, logger := setupLogger(t)
+		NewServer(WithServerLogger(logger))
+
+		if len(b.Buffer) != 1 {
+			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		}
+		expected := "level=info msg=\"http server created\" addr=:8443\n"
+		if b.Buffer[0] != expected {
+			t.Errorf("\nExpected: %sActual:   %s", expected, b.Buffer[0])
+		}
+	})
+
+	t.Run("with tls enabled", func(t *testing.T) {
+		b, logger := setupLogger(t)
+		cfg := mock.Server{
+			Cert_: "../test/insecure/cert.pem",
+			Key_:  "../test/insecure/key.pem",
+		}
+		tlsConfig, err := config.NewTLS(cfg)
+		if err != nil {
+			t.Errorf("Failed to create tls config")
+		}
+
+		NewServer(WithServerTLS(tlsConfig), WithServerLogger(logger))
+		if len(b.Buffer) != 1 {
+			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		}
+		expected := "level=info msg=\"http server created\" addr=:8443 tls=enabled\n"
+		if b.Buffer[0] != expected {
+			t.Errorf("\nExpected: %sActual:   %s", expected, b.Buffer[0])
+		}
+	})
+
+	t.Run("with mtls enabled", func(t *testing.T) {
+		b, logger := setupLogger(t)
+		cfg := mock.Server{
+			Cert_:   "../test/insecure/cert.pem",
+			Key_:    "../test/insecure/key.pem",
+			CACert_: "../test/insecure/rootCA.pem",
+		}
+		tlsConfig, err := config.NewTLS(cfg)
+		if err != nil {
+			t.Errorf("Failed to create mtls config")
+		}
+
+		NewServer(WithServerTLS(tlsConfig), WithServerLogger(logger))
+		if len(b.Buffer) != 1 {
+			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		}
+		expected := "level=info msg=\"http server created\" addr=:8443 mtls=enabled\n"
+		if b.Buffer[0] != expected {
+			t.Errorf("\nExpected: %sActual:   %s", expected, b.Buffer[0])
+		}
+	})
+}
+
+func TestServerRegister(t *testing.T) {
+	b, logger := setupLogger(t)
+	m := &mockService{}
+
+	s := NewServer(WithServerLogger(logger))
+	s.Register(m)
+	if !m.registerCalled {
+		t.Errorf("Failed to call register")
 	}
 
-	s, err := New(mockConfig, WithTLS(tlsConfig))
+	if len(b.Buffer) != 2 {
+		t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+	}
+	expected := "level=info msg=\"http server created\" addr=:8443\n"
+	if b.Buffer[0] != expected {
+		t.Errorf("\nExpected: %sActual:   %s", expected, b.Buffer[0])
+	}
+	expected = "level=info msg=\"service registered\" service=mockService\n"
+	if b.Buffer[1] != expected {
+		t.Errorf("\nExpected: %sActual:   %s", expected, b.Buffer[1])
+	}
 
-	if s == nil {
-		t.Error("failed to create http server")
+	req := httptest.NewRequest(http.MethodGet, "/foo", nil)
+	rw := httptest.NewRecorder()
+	s.router.ServeHTTP(rw, req)
+
+	if !m.handlerCalled {
+		t.Errorf("Failed to call handler")
 	}
-	if err != nil {
-		t.Errorf("recieved unexpected error: %s", err)
-	}
-	if s.server.TLSConfig != tlsConfig {
-		t.Error("failed to set tls config")
+	if rw.Code != http.StatusOK {
+		t.Errorf("Unexpected status: %+v", rw.Code)
 	}
 }
 
-func TestHttpServerNewWithoutTLS(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	ctrl.Finish()
+func TestServerServe(t *testing.T) {
+	t.Run("listen failure", func(t *testing.T) {
+		s := NewServer(WithServerAddr(":42"))
+		err := s.Serve()
+		if err == nil {
+			t.Errorf("Expected an error")
+		}
+		expected := "Failed to listen on :42"
+		if !strings.Contains(err.Error(), expected) {
+			t.Errorf("\nExpected error: %s\nActual error:   %s", err.Error(), expected)
+		}
+	})
 
-	mockConfig := mockhttp.NewMockConfig(ctrl)
-	mockConfig.EXPECT().Addr().Return(":8080")
+	t.Run("serve no-tls", func(t *testing.T) {
+		m := &mockService{}
 
-	s, err := New(mockConfig)
+		s := NewServer(WithServerAddr(":4242"))
+		s.Register(m)
 
-	if s == nil {
-		t.Error("failed to create http server")
-	}
-	if err != nil {
-		t.Errorf("recieved unexpected error: %s", err)
-	}
-	if s.server.TLSConfig != nil {
-		t.Error("tls config incorrectly set")
-	}
-}
+		result := make(chan error, 1)
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() { wg.Done(); result <- s.Serve() }()
+		wg.Wait()
 
-func TestHttpServerHandleMux(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	ctrl.Finish()
+		s.Shutdown()
+		err := <-result
 
-	mockConfig := mockhttp.NewMockConfig(ctrl)
-	mockConfig.EXPECT().Addr().Return(":8080")
+		if err != nil {
+			t.Errorf("Unexpected err: %s", err)
+		}
+	})
 
-	s, _ := New(mockConfig)
+	t.Run("serve mtls", func(t *testing.T) {
+		cfg := mock.Server{
+			Cert_:   "../test/insecure/cert.pem",
+			Key_:    "../test/insecure/key.pem",
+			CACert_: "../test/insecure/rootCA.pem",
+		}
+		tlsConfig, err := config.NewTLS(cfg)
+		if err != nil {
+			t.Errorf("Failed to create mtls config")
+		}
+		m := &mockService{}
 
-	mux := http.NewServeMux()
+		s := NewServer(WithServerTLS(tlsConfig), WithServerAddr(":2424"))
+		s.Register(m)
 
-	s.Handle(mux)
+		result := make(chan error, 1)
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() { wg.Done(); result <- s.Serve() }()
+		wg.Wait()
 
-	if s.server.Handler != mux {
-		t.Error("failed to set handler")
-	}
-}
-
-func TestHttpServerServeBadAddr(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	ctrl.Finish()
-
-	mockConfig := mockhttp.NewMockConfig(ctrl)
-	mockConfig.EXPECT().Addr().Return(":-1")
-
-	s, _ := New(mockConfig)
-
-	result := make(chan error)
-	go s.Serve(result)
-	err := <-result
-
-	if err == nil {
-		t.Error("expecting an error")
-	}
-
-	expectedErr := "listen tcp: address -1: invalid port: Failed to listen on :-1"
-	if err.Error() != expectedErr {
-		t.Errorf("\nexpected error: %s\nactual   %s", expectedErr, err.Error())
-	}
-}
-
-func TestHttpServerServeStop(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	ctrl.Finish()
-
-	mockConfig := mockhttp.NewMockConfig(ctrl)
-	mockConfig.EXPECT().Addr().Return(":8080")
-
-	s, _ := New(mockConfig)
-
-	result := make(chan error)
-	go s.Serve(result)
-
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(500*time.Millisecond))
-	defer cancel()
-
-	var err error
-	select {
-	case err = <-result:
-	case <-ctx.Done():
-		s.Stop()
+		s.Shutdown()
 		err = <-result
+
+		if err != nil {
+			t.Errorf("Unexpected err: %s", err)
+		}
+	})
+}
+
+func TestServerRecoverPanics(t *testing.T) {
+	b, logger := setupLogger(t)
+	m := &mockService{}
+
+	s := NewServer(WithServerLogger(logger))
+	s.Register(m)
+
+	req := httptest.NewRequest(http.MethodPut, "/panic", nil)
+	rw := httptest.NewRecorder()
+	s.router.ServeHTTP(rw, req)
+
+	if !m.panicCalled {
+		t.Errorf("Failed to call panic")
+	}
+	if rw.Code != http.StatusInternalServerError {
+		t.Errorf("Unexpected status: %+v", rw.Code)
 	}
 
-	if err != nil {
-		t.Errorf("unexpected error: %s", err)
+	n := len(b.Buffer)
+	expected := "level=error msg=\"recovering from a panic\""
+	if !strings.Contains(b.Buffer[n-2], expected) {
+		t.Errorf("\nExpected: %s\nActual:   %s", expected, b.Buffer[n-2])
+	}
+	expected = "level=error stacktrace="
+	if !strings.Contains(b.Buffer[n-1], expected) {
+		t.Errorf("\nExpected: %s\nActual:   %s", expected, b.Buffer[n-1])
 	}
 }
-*/
+
+func TestServerRequestLogging(t *testing.T) {
+	b, logger := setupLogger(t)
+	m := &mockService{}
+
+	s := NewServer(WithServerLogger(logger))
+	s.Register(m)
+
+	req := httptest.NewRequest(http.MethodGet, "/foo", nil)
+	rw := httptest.NewRecorder()
+	s.router.ServeHTTP(rw, req)
+
+	if rw.Code != http.StatusOK {
+		t.Errorf("Unexpected status: %+v", rw.Code)
+	}
+
+	n := len(b.Buffer)
+	expected := `level=info method=GET url=/foo msg="request start"`
+	if !strings.Contains(b.Buffer[n-3], expected) {
+		t.Errorf("\nExpected: %s\nActual:   %s", expected, b.Buffer[n-3])
+	}
+	expected = `level=debug method=GET url=/foo msg="handler called"`
+	if !strings.Contains(b.Buffer[n-2], expected) {
+		t.Errorf("\nExpected: %s\nActual:   %s", expected, b.Buffer[n-2])
+	}
+	expected = `level=info method=GET url=/foo msg="request stop"`
+	if !strings.Contains(b.Buffer[n-1], expected) {
+		t.Errorf("\nExpected: %s\nActual:   %s", expected, b.Buffer[n-1])
+	}
+}
+
+func setupLogger(t *testing.T) (*test.StringBuffer, log.Logger) {
+	t.Helper()
+
+	b := test.NewStringBuffer()
+	logger, err := log.New(
+		log.WithLevel(log.LevelDebug),
+		log.WithFormat(log.FormatLogfmt),
+		log.WithOutput(b),
+		log.WithoutTimestamp(),
+	)
+	if err != nil {
+		t.Fatal("failed to create logger")
+	}
+
+	return b, logger
+}
+
+type (
+	mockService struct {
+		registerCalled, handlerCalled, panicCalled bool
+	}
+)
+
+var _ Service = (*mockService)(nil)
+
+func (m *mockService) Register(r *mux.Router) {
+	m.registerCalled = true
+	r.HandleFunc("/foo", m.handler).Methods(http.MethodGet)
+	r.HandleFunc("/panic", m.boom).Methods(http.MethodPut)
+}
+
+func (m *mockService) Fields() []interface{} {
+	return []interface{}{
+		"service", "mockService",
+	}
+}
+
+func (m *mockService) handler(w http.ResponseWriter, r *http.Request) {
+	m.handlerCalled = true
+	logger := log.LoggerFromContext(r.Context())
+	logger.Debug("msg", "handler called")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (m *mockService) boom(http.ResponseWriter, *http.Request) {
+	m.panicCalled = true
+	panic("boom")
+}

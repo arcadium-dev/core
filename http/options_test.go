@@ -12,22 +12,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package http
+package http // import "arcadium.dev/core/http"
 
 import (
 	"crypto/tls"
 	"net/http"
 	"testing"
+	"time"
+
+	"arcadium.dev/core/log"
 )
 
-func TestWithTLS(t *testing.T) {
+func TestWithServerAddr(t *testing.T) {
+	addr := "example.com:4201"
+	s := &Server{}
+	WithServerAddr(addr).apply(s)
+
+	if s.addr != addr {
+		t.Error("failed to set server addr")
+	}
+}
+
+func TestWithServerTLS(t *testing.T) {
 	s := &Server{
 		server: &http.Server{},
 	}
 	cfg := &tls.Config{}
-	WithTLS(cfg).apply(s)
+	WithServerTLS(cfg).apply(s)
 
 	if s.server.TLSConfig == nil {
 		t.Error("failed to set TLSConfig")
+	}
+}
+
+func TestWithServerShutdownTimeout(t *testing.T) {
+	s := &Server{}
+	timeout := 52 * time.Second
+	WithServerShutdownTimeout(timeout).apply(s)
+
+	if s.shutdownTimeout != timeout {
+		t.Errorf("Unexpected timeout: %v", s.shutdownTimeout)
+	}
+}
+
+func TestWithServerLogger(t *testing.T) {
+	s := &Server{}
+	logger, err := log.New(log.WithLevel(log.LevelDebug), log.WithFormat(log.FormatLogfmt))
+	if err != nil {
+		t.Fatal("Failed to create logger")
+	}
+	WithServerLogger(logger).apply(s)
+
+	if s.logger != logger {
+		t.Errorf("Unexpected logger: %+v", logger)
 	}
 }

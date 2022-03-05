@@ -45,7 +45,7 @@ func Wrap(err error, msg string) error {
 	return Errorf("%w: %s", err, msg)
 }
 
-// Wrap returns an error wrapped with the format specifier.
+// Wrapf returns an error wrapped with the format specifier.
 // If the given error is nil, Wrap returns nil.
 func Wrapf(e error, format string, a ...interface{}) error {
 	return Wrap(e, fmt.Sprintf(format, a...))

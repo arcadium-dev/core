@@ -94,6 +94,20 @@ func TestWithOutput(t *testing.T) {
 	}
 }
 
+func TestWithoutTimestamp(t *testing.T) {
+	t.Parallel()
+	var opts options
+
+	o := WithoutTimestamp()
+	if o == nil {
+		t.Errorf("option expected")
+	}
+	o.apply(&opts)
+	if opts.timestamped != false {
+		t.Error("Expected timestamped to be false")
+	}
+}
+
 func TestNew(t *testing.T) {
 	t.Parallel()
 
@@ -222,6 +236,7 @@ func TestDebug(t *testing.T) {
 			WithLevel(LevelDebug),
 			WithFormat(FormatLogfmt),
 			WithOutput(b),
+			WithoutTimestamp(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
@@ -279,6 +294,7 @@ func TestInfo(t *testing.T) {
 			WithLevel(LevelInfo),
 			WithFormat(FormatJSON),
 			WithOutput(b),
+			WithoutTimestamp(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
@@ -336,6 +352,7 @@ func TestWarn(t *testing.T) {
 			WithLevel(LevelWarn),
 			WithFormat(FormatLogfmt),
 			WithOutput(b),
+			WithoutTimestamp(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
@@ -393,6 +410,7 @@ func TestError(t *testing.T) {
 			WithLevel(LevelError),
 			WithFormat(FormatJSON),
 			WithOutput(b),
+			WithoutTimestamp(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
@@ -424,6 +442,7 @@ func TestLogging(t *testing.T) {
 	l, err := New(
 		WithLevel(LevelDebug),
 		WithOutput(b),
+		WithoutTimestamp(),
 	)
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
@@ -464,6 +483,7 @@ func TestWith(t *testing.T) {
 	l, err := New(
 		WithFormat(FormatLogfmt),
 		WithOutput(b),
+		WithoutTimestamp(),
 	)
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
@@ -535,6 +555,7 @@ func TestLoggerContext(t *testing.T) {
 	l, err := New(
 		WithFormat(FormatLogfmt),
 		WithOutput(b),
+		WithoutTimestamp(),
 	)
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
@@ -553,7 +574,7 @@ func TestLoggerContext(t *testing.T) {
 		t.Errorf("Unexpected logger from context")
 	}
 
-	l.Info("bob", "smith", "alice", "jones")
+	nl.Info("bob", "smith", "alice", "jones")
 
 	if len(b.Buffer) != 1 {
 		t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
