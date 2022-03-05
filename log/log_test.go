@@ -71,15 +71,15 @@ func TestWithFormat(t *testing.T) {
 func TestWithOutput(t *testing.T) {
 	var (
 		opts options
-		lb   = test.NewStringBuffer()
+		b    = test.NewStringBuffer()
 	)
-	o := WithOutput(lb)
+	o := WithOutput(b)
 	if o == nil {
 		t.Fatal("option expected")
 	}
 	o.apply(&opts)
-	if opts.writer != lb {
-		t.Errorf("Expected: %s actual: %s", lb, opts.writer)
+	if opts.writer != b {
+		t.Errorf("Expected: %+v actual: %+v", b, opts.writer)
 	}
 }
 
@@ -247,16 +247,16 @@ func TestDebug(t *testing.T) {
 		l.Debug("a", "b")
 		l.Debug("c", "d")
 
-		if len(b.Buffer) != 2 {
-			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		if b.Len() != 2 {
+			t.Errorf("Unexpected buffer length: %d", b.Len())
 		}
 		expected := "level=debug a=b\n"
-		if b.Buffer[0] != expected {
-			t.Errorf("\nExpected %sActual:  %s", expected, b.Buffer[0])
+		if b.Index(0) != expected {
+			t.Errorf("\nExpected %sActual:  %s", expected, b.Index(0))
 		}
 		expected = "level=debug c=d\n"
-		if b.Buffer[1] != expected {
-			t.Errorf("Expected '%s', Actual: '%s'", expected, b.Buffer[1])
+		if b.Index(1) != expected {
+			t.Errorf("Expected '%s', Actual: '%s'", expected, b.Index(1))
 		}
 	})
 
@@ -276,8 +276,8 @@ func TestDebug(t *testing.T) {
 
 		l.Debug("a", "b")
 
-		if len(b.Buffer) != 0 {
-			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		if b.Len() != 0 {
+			t.Errorf("Unexpected buffer length: %d", b.Len())
 		}
 	})
 
@@ -299,16 +299,16 @@ func TestDebug(t *testing.T) {
 		Debug("a", "b")
 		Debug("c", "d")
 
-		if len(b.Buffer) != 2 {
-			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		if b.Len() != 2 {
+			t.Errorf("Unexpected buffer length: %d", b.Len())
 		}
 		expected := "level=debug a=b\n"
-		if b.Buffer[0] != expected {
-			t.Errorf("\nExpected %sActual:  %s", expected, b.Buffer[0])
+		if b.Index(0) != expected {
+			t.Errorf("\nExpected %sActual:  %s", expected, b.Index(0))
 		}
 		expected = "level=debug c=d\n"
-		if b.Buffer[1] != expected {
-			t.Errorf("Expected '%s', Actual: '%s'", expected, b.Buffer[1])
+		if b.Index(1) != expected {
+			t.Errorf("Expected '%s', Actual: '%s'", expected, b.Index(1))
 		}
 	})
 }
@@ -332,16 +332,16 @@ func TestInfo(t *testing.T) {
 		l.Info("a", "b")
 		l.Info("c", "d")
 
-		if len(b.Buffer) != 2 {
-			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		if b.Len() != 2 {
+			t.Errorf("Unexpected buffer length: %d", b.Len())
 		}
 		expected := "{\"a\":\"b\",\"level\":\"info\"}\n"
-		if b.Buffer[0] != expected {
-			t.Errorf("\nExpected %sActual:  %s", expected, b.Buffer[0])
+		if b.Index(0) != expected {
+			t.Errorf("\nExpected %sActual:  %s", expected, b.Index(0))
 		}
 		expected = "{\"c\":\"d\",\"level\":\"info\"}\n"
-		if b.Buffer[1] != expected {
-			t.Errorf("\nExpected %sActual:  %s", expected, b.Buffer[1])
+		if b.Index(1) != expected {
+			t.Errorf("\nExpected %sActual:  %s", expected, b.Index(1))
 		}
 	})
 
@@ -362,8 +362,8 @@ func TestInfo(t *testing.T) {
 
 		l.Info("a", "b")
 
-		if len(b.Buffer) != 0 {
-			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		if b.Len() != 0 {
+			t.Errorf("Unexpected buffer length: %d", b.Len())
 		}
 	})
 
@@ -385,16 +385,16 @@ func TestInfo(t *testing.T) {
 		Info("a", "b")
 		Info("c", "d")
 
-		if len(b.Buffer) != 2 {
-			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		if b.Len() != 2 {
+			t.Errorf("Unexpected buffer length: %d", b.Len())
 		}
 		expected := "level=info a=b\n"
-		if b.Buffer[0] != expected {
-			t.Errorf("\nExpected %sActual:  %s", expected, b.Buffer[0])
+		if b.Index(0) != expected {
+			t.Errorf("\nExpected %sActual:  %s", expected, b.Index(0))
 		}
 		expected = "level=info c=d\n"
-		if b.Buffer[1] != expected {
-			t.Errorf("Expected '%s', Actual: '%s'", expected, b.Buffer[1])
+		if b.Index(1) != expected {
+			t.Errorf("Expected '%s', Actual: '%s'", expected, b.Index(1))
 		}
 	})
 }
@@ -418,16 +418,16 @@ func TestWarn(t *testing.T) {
 		l.Warn("a", "b")
 		l.Warn("c", "d")
 
-		if len(b.Buffer) != 2 {
-			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		if b.Len() != 2 {
+			t.Errorf("Unexpected buffer length: %d", b.Len())
 		}
 		expected := "level=warn a=b\n"
-		if b.Buffer[0] != expected {
-			t.Errorf("\nExpected %sActual:  %s", expected, b.Buffer[0])
+		if b.Index(0) != expected {
+			t.Errorf("\nExpected %sActual:  %s", expected, b.Index(0))
 		}
 		expected = "level=warn c=d\n"
-		if b.Buffer[1] != expected {
-			t.Errorf("Expected '%s', Actual: '%s'", expected, b.Buffer[1])
+		if b.Index(1) != expected {
+			t.Errorf("Expected '%s', Actual: '%s'", expected, b.Index(1))
 		}
 	})
 
@@ -447,8 +447,8 @@ func TestWarn(t *testing.T) {
 
 		l.Warn("a", "b")
 
-		if len(b.Buffer) != 0 {
-			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		if b.Len() != 0 {
+			t.Errorf("Unexpected buffer length: %d", b.Len())
 		}
 	})
 
@@ -470,16 +470,16 @@ func TestWarn(t *testing.T) {
 		Warn("a", "b")
 		Warn("c", "d")
 
-		if len(b.Buffer) != 2 {
-			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		if b.Len() != 2 {
+			t.Errorf("Unexpected buffer length: %d", b.Len())
 		}
 		expected := "level=warn a=b\n"
-		if b.Buffer[0] != expected {
-			t.Errorf("\nExpected %sActual:  %s", expected, b.Buffer[0])
+		if b.Index(0) != expected {
+			t.Errorf("\nExpected %sActual:  %s", expected, b.Index(0))
 		}
 		expected = "level=warn c=d\n"
-		if b.Buffer[1] != expected {
-			t.Errorf("Expected '%s', Actual: '%s'", expected, b.Buffer[1])
+		if b.Index(1) != expected {
+			t.Errorf("Expected '%s', Actual: '%s'", expected, b.Index(1))
 		}
 	})
 }
@@ -503,16 +503,16 @@ func TestError(t *testing.T) {
 		l.Error("a", "b")
 		l.Error("c", "d")
 
-		if len(b.Buffer) != 2 {
-			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		if b.Len() != 2 {
+			t.Errorf("Unexpected buffer length: %d", b.Len())
 		}
 		expected := "{\"a\":\"b\",\"level\":\"error\"}\n"
-		if b.Buffer[0] != expected {
-			t.Errorf("\nExpected %sActual:  %s", expected, b.Buffer[0])
+		if b.Index(0) != expected {
+			t.Errorf("\nExpected %sActual:  %s", expected, b.Index(0))
 		}
 		expected = "{\"c\":\"d\",\"level\":\"error\"}\n"
-		if b.Buffer[1] != expected {
-			t.Errorf("\nExpected %sActual:  %s", expected, b.Buffer[1])
+		if b.Index(1) != expected {
+			t.Errorf("\nExpected %sActual:  %s", expected, b.Index(1))
 		}
 	})
 
@@ -534,16 +534,16 @@ func TestError(t *testing.T) {
 		Error("a", "b")
 		Error("c", "d")
 
-		if len(b.Buffer) != 2 {
-			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		if b.Len() != 2 {
+			t.Errorf("Unexpected buffer length: %d", b.Len())
 		}
 		expected := "level=error a=b\n"
-		if b.Buffer[0] != expected {
-			t.Errorf("\nExpected %sActual:  %s", expected, b.Buffer[0])
+		if b.Index(0) != expected {
+			t.Errorf("\nExpected %sActual:  %s", expected, b.Index(0))
 		}
 		expected = "level=error c=d\n"
-		if b.Buffer[1] != expected {
-			t.Errorf("Expected '%s', Actual: '%s'", expected, b.Buffer[1])
+		if b.Index(1) != expected {
+			t.Errorf("Expected '%s', Actual: '%s'", expected, b.Index(1))
 		}
 	})
 }
@@ -567,24 +567,24 @@ func TestLogging(t *testing.T) {
 	l.Warn("msg", "Hello World", "addr", "127.0.0.1", "port", 8443)
 	l.Error("msg", "this is an error")
 
-	if len(b.Buffer) != 4 {
-		t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+	if b.Len() != 4 {
+		t.Errorf("Unexpected buffer length: %d", b.Len())
 	}
 	expected := "level=debug a=b c=d e=f\n"
-	if b.Buffer[0] != expected {
-		t.Errorf("\nExpected %s\nActual:  %s", expected, b.Buffer[0])
+	if b.Index(0) != expected {
+		t.Errorf("\nExpected %s\nActual:  %s", expected, b.Index(0))
 	}
 	expected = "level=info foo=bar beh=baz\n"
-	if b.Buffer[1] != expected {
-		t.Errorf("\nExpected %s\nActual:  %s", expected, b.Buffer[1])
+	if b.Index(1) != expected {
+		t.Errorf("\nExpected %s\nActual:  %s", expected, b.Index(1))
 	}
 	expected = "level=warn msg=\"Hello World\" addr=127.0.0.1 port=8443\n"
-	if b.Buffer[2] != expected {
-		t.Errorf("\nExpected %s\nActual:  %s", expected, b.Buffer[2])
+	if b.Index(2) != expected {
+		t.Errorf("\nExpected %s\nActual:  %s", expected, b.Index(2))
 	}
 	expected = "level=error msg=\"this is an error\"\n"
-	if b.Buffer[3] != expected {
-		t.Errorf("\nExpected %s\nActual:  %s", expected, b.Buffer[3])
+	if b.Index(3) != expected {
+		t.Errorf("\nExpected %s\nActual:  %s", expected, b.Index(3))
 	}
 }
 
@@ -605,13 +605,13 @@ func TestWith(t *testing.T) {
 
 	l.Info("bob", "smith", "alice", "jones")
 
-	if len(b.Buffer) != 1 {
-		t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+	if b.Len() != 1 {
+		t.Errorf("Unexpected buffer length: %d", b.Len())
 	}
 
 	expected := "level=info id=0000-111 bob=smith alice=jones\n"
-	if b.Buffer[0] != expected {
-		t.Errorf("\nExpected %sActual:  %s", expected, b.Buffer[0])
+	if b.Index(0) != expected {
+		t.Errorf("\nExpected %sActual:  %s", expected, b.Index(0))
 	}
 }
 
@@ -693,13 +693,13 @@ func TestLoggerContext(t *testing.T) {
 
 		nl.Info("bob", "smith", "alice", "jones")
 
-		if len(b.Buffer) != 1 {
-			t.Errorf("Unexpected buffer length: %d", len(b.Buffer))
+		if b.Len() != 1 {
+			t.Errorf("Unexpected buffer length: %d", b.Len())
 		}
 
 		expected := "level=info id=0000-111 bob=smith alice=jones\n"
-		if !strings.Contains(b.Buffer[0], expected) {
-			t.Errorf("\nExpected %sActual:  %s", expected, b.Buffer[0])
+		if !strings.Contains(b.Index(0), expected) {
+			t.Errorf("\nExpected %sActual:  %s", expected, b.Index(0))
 		}
 	})
 }
