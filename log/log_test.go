@@ -111,10 +111,7 @@ func TestAsDefault(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	t.Run("Test invalid level option", func(t *testing.T) {
-		l, err := New(WithLevel(Level(42)))
-		if l != nil {
-			t.Errorf("Unexpected logger")
-		}
+		_, err := New(WithLevel(Level(42)))
 		if err == nil {
 			t.Errorf("Expected an error")
 		}
@@ -124,10 +121,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Test invalid format option", func(t *testing.T) {
-		l, err := New(WithFormat(Format(42)))
-		if l != nil {
-			t.Errorf("Unexpected logger")
-		}
+		_, err := New(WithFormat(Format(42)))
 		if err == nil {
 			t.Errorf("Expected an error")
 		}
@@ -136,10 +130,7 @@ func TestNew(t *testing.T) {
 		}
 	})
 	t.Run("Test invalid output option", func(t *testing.T) {
-		l, err := New(WithOutput(nil))
-		if l != nil {
-			t.Errorf("Unexpected logger")
-		}
+		_, err := New(WithOutput(nil))
 		if err == nil {
 			t.Errorf("Expected an error")
 		}
@@ -153,7 +144,7 @@ func TestNew(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if l == nil || l.(*logger).logger == nil {
+		if l.logger == nil {
 			t.Error("Expected a logger")
 		}
 	})
@@ -163,7 +154,7 @@ func TestNew(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if l == nil || l.(*logger).logger == nil {
+		if l.logger == nil {
 			t.Error("Expected a logger")
 		}
 	})
@@ -173,7 +164,7 @@ func TestNew(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if l == nil || l.(*logger).logger == nil {
+		if l.logger == nil {
 			t.Error("Expected a logger")
 		}
 	})
@@ -183,7 +174,7 @@ func TestNew(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if l == nil || DefaultLogger != l {
+		if DefaultLogger != l {
 			t.Errorf("Expected DefaultLogger to be the same as the new logger")
 		}
 	})
@@ -198,7 +189,7 @@ func TestNew(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if l == nil || l.(*logger).logger == nil {
+		if l.logger == nil {
 			t.Error("Expected a logger")
 		}
 		if DefaultLogger != l {
@@ -211,19 +202,9 @@ func TestNew(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		l, ok := DefaultLogger.(*logger)
-		if !ok || l == nil {
-			t.Fatalf("Failed to initialize default logger")
-		}
 
-		if l.opts.level != LevelInfo {
-			t.Errorf("Expect %d: Actual %d", LevelInfo, l.opts.level)
-		}
-		if l.opts.format != FormatLogfmt {
-			t.Errorf("Expect %d: Actual %d", FormatLogfmt, l.opts.format)
-		}
-		if l.opts.writer != os.Stdout {
-			t.Errorf("Unexpected writer: %+v", l.opts.writer)
+		if DefaultLogger.level != LevelInfo {
+			t.Errorf("Expect %d: Actual %d", LevelInfo, DefaultLogger.level)
 		}
 	})
 }
@@ -239,9 +220,6 @@ func TestDebug(t *testing.T) {
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
-		}
-		if l == nil {
-			t.Errorf("Expected a logger")
 		}
 
 		l.Debug("a", "b")
@@ -269,9 +247,6 @@ func TestDebug(t *testing.T) {
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
-		}
-		if l == nil {
-			t.Errorf("Expected a logger")
 		}
 
 		l.Debug("a", "b")
@@ -325,9 +300,6 @@ func TestInfo(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if l == nil {
-			t.Errorf("Expected a logger")
-		}
 
 		l.Info("a", "b")
 		l.Info("c", "d")
@@ -355,9 +327,6 @@ func TestInfo(t *testing.T) {
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
-		}
-		if l == nil {
-			t.Errorf("Expected a logger")
 		}
 
 		l.Info("a", "b")
@@ -411,9 +380,6 @@ func TestWarn(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if l == nil {
-			t.Errorf("Expected a logger")
-		}
 
 		l.Warn("a", "b")
 		l.Warn("c", "d")
@@ -440,9 +406,6 @@ func TestWarn(t *testing.T) {
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
-		}
-		if l == nil {
-			t.Errorf("Expected a logger")
 		}
 
 		l.Warn("a", "b")
@@ -495,9 +458,6 @@ func TestError(t *testing.T) {
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
-		}
-		if l == nil {
-			t.Errorf("Expected a logger")
 		}
 
 		l.Error("a", "b")
@@ -558,9 +518,6 @@ func TestLogging(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
 	}
-	if l == nil {
-		t.Errorf("Expected a logger")
-	}
 
 	l.Debug("a", "b", "c", "d", "e", "f")
 	l.Info("foo", "bar", "beh", "baz")
@@ -597,9 +554,6 @@ func TestWith(t *testing.T) {
 	)
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
-	}
-	if l == nil {
-		t.Errorf("Expected a logger")
 	}
 	l = l.With("id", "0000-111")
 
@@ -660,13 +614,6 @@ func TestToFormat(t *testing.T) {
 }
 
 func TestLoggerContext(t *testing.T) {
-	t.Run("no logger in context", func(t *testing.T) {
-		l := LoggerFromContext(context.Background())
-		if l == nil {
-			t.Errorf("Failed to create a logger")
-		}
-	})
-
 	t.Run("insert, extract success", func(t *testing.T) {
 		b := test.NewStringBuffer()
 		l, err := New(
@@ -676,9 +623,6 @@ func TestLoggerContext(t *testing.T) {
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
-		}
-		if l == nil {
-			t.Errorf("Expected a logger")
 		}
 		l = l.With("id", "0000-111")
 

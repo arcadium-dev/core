@@ -1,47 +1,103 @@
-// Copyright 2021 arcadium.dev <info@arcadium.dev>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package sql
 
 import (
+	"database/sql"
+	"errors"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/DATA-DOG/go-sqlmock"
 )
 
-func TestOpenSuccess(t *testing.T) {
-	// FIXME
-}
+func TestOpen(t *testing.T) {
+	sqlmock.MonitorPingsOption(true)
+	logger := mockLogger{}
 
-func TestOpenFailures(t *testing.T) {
-	t.Parallel()
+	t.Run("open failure", func(t *testing.T) {
+		// Replace open with a mock that returns an error.
+		open = func(driver, url string) (*sql.DB, error) {
+			return nil, errors.New("open failure")
+		}
 
-	t.Run("Test driver name failure", func(t *testing.T) {
-		// FIXME
+		_, err := Open("postgres", "url", logger)
+		if err == nil || err.Error() != "failed to open postgres database: open failure" {
+			t.Errorf("Unexpected error: %s", err.Error())
+		}
 	})
 
-	t.Run("Test dsn failure", func(t *testing.T) {
-		// FIXME
+	t.Run("connect failure", func(t *testing.T) {
+		// Replace open with a mock that returns an sqlmock db.
+		open = func(driver, url string) (*sql.DB, error) {
+			db, _, err := sqlmock.New()
+			if err != nil {
+				t.Fatalf("failed to create sqlmock")
+			}
+			return db, nil
+		}
+
+		// Replace connect with a mock that will return an error.
+		oldConnect := connect
+		connect = func(*sql.DB, Logger) error {
+			return errors.New("connect failure")
+		}
+		defer func() { connect = oldConnect }()
+
+		_, err := Open("driver", "url", logger)
+		if err == nil || err.Error() != "failed to connect to the database: connect failure" {
+			t.Errorf("Unexpected error: %s", err.Error())
+		}
 	})
 
-	t.Run("Test migration failure", func(t *testing.T) {
-		// FIXME
+	t.Run("connect failure - timeout", func(t *testing.T) {
+		open = func(driver, url string) (*sql.DB, error) {
+			db, _, err := sqlmock.New()
+			if db == nil || err != nil {
+				t.Fatal("failed to create sqlmock")
+			}
+			return db, nil
+		}
+
+		// Timeout is less than the retry, so we will hit the context deadline.
+		timeout = 50 * time.Millisecond
+		db, err := Open("driver", "url", logger)
+
+		if db != nil {
+			t.Errorf("Unexpected db: %+v", db)
+		}
+		if err == nil {
+			t.Error("Expected an error")
+		}
+		if strings.Contains(err.Error(), "failed to connect to database") {
+			t.Errorf("Unexpected error: %s", err.Error())
+		}
+	})
+
+	t.Run("connect success", func(t *testing.T) {
+		open = func(driver, url string) (*sql.DB, error) {
+			db, _, err := sqlmock.New()
+			if db == nil || err != nil {
+				t.Fatal("failed to create sqlmock")
+			}
+			return db, nil
+		}
+
+		// Timeout is greater than the retry, so we will get a successful ping.
+		timeout = 2 * time.Second
+		db, err := Open("driver", "url", logger)
+
+		if db == nil {
+			t.Error("Expected a db")
+		}
+		db.Close()
+		if err != nil {
+			t.Error("Unexpected error")
+		}
 	})
 }
 
-func TestConnectSuccess(t *testing.T) {
-	// FIXME
-}
+type (
+	mockLogger struct{}
+)
 
-func TestConnectFailure(t *testing.T) {
-	// FIXME
-}
+func (m mockLogger) Info(...interface{}) {}

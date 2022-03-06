@@ -33,12 +33,26 @@ func TestSQL(t *testing.T) {
 		}
 	})
 
-	t.Run("success", func(t *testing.T) {
-		expectedURL := "postgresql://dev_infra_user@cockroach:26257/dev_infra?sslmode=verify-full&sslrootcert=%2Fetc%2Fcerts%2Fca.crt"
+	t.Run("defaults", func(t *testing.T) {
 		cfg := setupSQL(t, test.Env(map[string]string{
-			"SQL_URL": expectedURL,
+			"SQL_URL": "postgresql://user@cockroach:16567/db",
 		}))
 
+		if cfg.Driver() != "pgx" {
+			t.Errorf("Expected: %s, Actual: %s", "pgx", cfg.Driver())
+		}
+	})
+
+	t.Run("success", func(t *testing.T) {
+		expectedURL := "postgresql://user@cockroach:26257/db?sslmode=verify-full&sslrootcert=%2Fetc%2Fcerts%2Fca.crt"
+		cfg := setupSQL(t, test.Env(map[string]string{
+			"SQL_DRIVER": "postgres",
+			"SQL_URL":    expectedURL,
+		}))
+
+		if cfg.Driver() != "postgres" {
+			t.Errorf("Unexpected driver: %s", cfg.Driver())
+		}
 		if cfg.URL() != expectedURL {
 			t.Errorf("\nExpected url: %s\nActual url:   %s", expectedURL, cfg.URL())
 		}

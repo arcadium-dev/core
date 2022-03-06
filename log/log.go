@@ -36,22 +36,9 @@ func init() {
 
 type (
 	// Logger is the interface for all logging operations.
-	Logger interface {
-		// Debug logs a debug level message.
-		Debug(...interface{})
-
-		// Info logs an info level message.
-		Info(...interface{})
-
-		// Warn logs a warn level message.
-		Warn(...interface{})
-
-		// Error logs an error level message.
-		Error(...interface{})
-
-		// With returns a new contextual logger with keyvals prepended to those
-		// passed to calls to log.
-		With(...interface{}) Logger
+	Logger struct {
+		level  Level
+		logger log.Logger
 	}
 
 	// Option provides for Logger configuration.
@@ -116,42 +103,40 @@ var (
 
 // New returns a Logger.
 func New(opts ...Option) (Logger, error) {
-	l := &logger{
-		opts: options{
-			level:       LevelInfo,
-			format:      FormatLogfmt,
-			writer:      os.Stdout,
-			timestamped: true,
-		},
+	o := options{
+		level:       LevelInfo,
+		format:      FormatLogfmt,
+		writer:      os.Stdout,
+		timestamped: true,
 	}
-
 	for _, opt := range opts {
-		opt.apply(&l.opts)
+		opt.apply(&o)
 	}
-	if l.opts.level >= LevelInvalid {
-		return nil, fmt.Errorf("%w: %d", ErrInvalidLevel, l.opts.level)
+	if o.level >= LevelInvalid {
+		return Logger{}, fmt.Errorf("%w: %d", ErrInvalidLevel, o.level)
 	}
-	if l.opts.format >= FormatInvalid {
-		return nil, fmt.Errorf("%w: %d", ErrInvalidFormat, l.opts.format)
+	if o.format >= FormatInvalid {
+		return Logger{}, fmt.Errorf("%w: %d", ErrInvalidFormat, o.format)
 	}
-	if l.opts.writer == nil {
-		return nil, ErrInvalidOutput
+	if o.writer == nil {
+		return Logger{}, ErrInvalidOutput
 	}
 
-	switch l.opts.format {
+	l := Logger{level: o.level}
+
+	switch o.format {
 	case FormatJSON:
-		l.logger = log.NewJSONLogger(log.NewSyncWriter(l.opts.writer))
+		l.logger = log.NewJSONLogger(log.NewSyncWriter(o.writer))
 	case FormatLogfmt:
-		l.logger = log.NewLogfmtLogger(log.NewSyncWriter(l.opts.writer))
+		l.logger = log.NewLogfmtLogger(log.NewSyncWriter(o.writer))
 	case FormatNop:
 		l.logger = log.NewNopLogger()
 	}
 
-	if l.opts.timestamped {
+	if o.timestamped {
 		l.logger = log.With(l.logger, "ts", log.DefaultTimestampUTC)
 	}
-
-	if l.opts.asDefault {
+	if o.asDefault {
 		DefaultLogger = l
 	}
 
@@ -197,8 +182,8 @@ func AsDefault() Option {
 }
 
 // Debug logs a debug level message.
-func (l *logger) Debug(kv ...interface{}) {
-	if l.opts.level > LevelDebug {
+func (l Logger) Debug(kv ...interface{}) {
+	if l.level > LevelDebug {
 		return
 	}
 	level.Debug(l.logger).Log(kv...)
@@ -210,8 +195,8 @@ func Debug(kv ...interface{}) {
 }
 
 // Info logs an info level message.
-func (l *logger) Info(kv ...interface{}) {
-	if l.opts.level > LevelInfo {
+func (l Logger) Info(kv ...interface{}) {
+	if l.level > LevelInfo {
 		return
 	}
 	level.Info(l.logger).Log(kv...)
@@ -223,8 +208,8 @@ func Info(kv ...interface{}) {
 }
 
 // Warn logs a warn level message.
-func (l *logger) Warn(kv ...interface{}) {
-	if l.opts.level > LevelWarn {
+func (l Logger) Warn(kv ...interface{}) {
+	if l.level > LevelWarn {
 		return
 	}
 	level.Warn(l.logger).Log(kv...)
@@ -236,7 +221,7 @@ func Warn(kv ...interface{}) {
 }
 
 // Error logs an error level message.
-func (l *logger) Error(kv ...interface{}) {
+func (l Logger) Error(kv ...interface{}) {
 	level.Error(l.logger).Log(kv...)
 }
 
@@ -247,9 +232,9 @@ func Error(kv ...interface{}) {
 
 // With returns a new contextual logger with keyvals prepended to those
 // passed to calls to log.
-func (l *logger) With(kv ...interface{}) Logger {
-	return &logger{
-		opts:   l.opts,
+func (l Logger) With(kv ...interface{}) Logger {
+	return Logger{
+		level:  l.level,
 		logger: log.With(l.logger, kv...),
 	}
 }
@@ -303,11 +288,6 @@ func LoggerFromContext(ctx context.Context) Logger {
 }
 
 type (
-	logger struct {
-		opts   options
-		logger log.Logger
-	}
-
 	options struct {
 		level       Level
 		format      Format

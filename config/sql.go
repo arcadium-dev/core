@@ -25,7 +25,8 @@ import (
 type (
 	// SQL holds the configuration settings needed to connect to an sql database.
 	SQL struct {
-		url string
+		driver string
+		url    string
 	}
 )
 
@@ -42,7 +43,8 @@ func NewSQL(opts ...Option) (SQL, error) {
 	prefix := o.Prefix + sqlPrefix
 
 	config := struct {
-		URL string `required:"true"`
+		Driver string `default:"pgx"`
+		URL    string `required:"true"`
 	}{}
 	if err := envconfig.Process(prefix, &config); err != nil {
 		return SQL{}, fmt.Errorf("failed to load %s configuration: %w", prefix, err)
@@ -51,8 +53,15 @@ func NewSQL(opts ...Option) (SQL, error) {
 		return SQL{}, fmt.Errorf("failed to parse %s connection url: %w", prefix, err)
 	}
 	return SQL{
-		url: strings.TrimSpace(config.URL),
+		driver: strings.TrimSpace(config.Driver),
+		url:    strings.TrimSpace(config.URL),
 	}, nil
+}
+
+// Driver returns the sql database driver. The value is set from the
+// <PREFIX_>SQL_DRIVER environment variable.
+func (s SQL) Driver() string {
+	return s.driver
 }
 
 // URL returns the connection URL for the SQL database. The value is set from

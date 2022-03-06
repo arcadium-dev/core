@@ -14,8 +14,6 @@
 
 package grpc
 
-//go:generate mockgen -package mockgrpc -destination ./mock/service.go . Service
-
 import (
 	"google.golang.org/grpc"
 )
