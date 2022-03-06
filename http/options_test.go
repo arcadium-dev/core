@@ -14,37 +14,68 @@
 
 package http
 
-/*
 import (
 	"crypto/tls"
 	"net/http"
 	"testing"
-	// mocklog "arcadium.dev/core/log/mock"
+	"time"
+
+	"arcadium.dev/core/log"
 )
 
-func TestServerWithTLS(t *testing.T) {
+func TestWithServerAddr(t *testing.T) {
+	addr := "example.com:4201"
+	s := &Server{}
+	WithServerAddr(addr).apply(s)
+
+	if s.addr != addr {
+		t.Error("failed to set server addr")
+	}
+}
+
+func TestWithServerTLS(t *testing.T) {
 	s := &Server{
 		server: &http.Server{},
 	}
 	cfg := &tls.Config{}
-	WithTLS(cfg).apply(s)
+	WithServerTLS(cfg).apply(s)
 
 	if s.server.TLSConfig == nil {
 		t.Error("failed to set TLSConfig")
 	}
 }
 
-func TestServerWithLogger(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockLogger := mocklog.NewMockLogger(ctrl)
-
+func TestWithServerShutdownTimeout(t *testing.T) {
 	s := &Server{}
+	timeout := 52 * time.Second
+	WithServerShutdownTimeout(timeout).apply(s)
 
-	WithLogger(mockLogger).apply(s)
-
-	if s.logger != mockLogger {
-		t.Error("failed to set logger")
+	if s.shutdownTimeout != timeout {
+		t.Errorf("Unexpected timeout: %v", s.shutdownTimeout)
 	}
 }
-*/
+
+func TestWithServerLogger(t *testing.T) {
+	s := &Server{}
+	logger, err := log.New(log.WithLevel(log.LevelDebug), log.WithFormat(log.FormatLogfmt))
+	if err != nil {
+		t.Fatal("Failed to create logger")
+	}
+	WithServerLogger(logger).apply(s)
+
+	if s.logger != logger {
+		t.Errorf("Unexpected logger: %+v", logger)
+	}
+}
+
+func TestWithMiddleware(t *testing.T) {
+	s := &Server{}
+	middleware := func(http.Handler) http.Handler {
+		return nil
+	}
+	WithMiddleware(middleware).apply(s)
+
+	if len(s.middleware) != 1 {
+		t.Errorf("Failure to create middleware")
+	}
+}
