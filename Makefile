@@ -1,4 +1,4 @@
-# Copyright 2021 arcadium.dev <info@arcadium.dev>
+# Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,21 +14,10 @@
 
 export SHELL := /bin/bash
 
-mockgen_version := v1.6.0
-
 # ----
 
 .PHONY: all
 all: lint test
-
-# ----
-
-.PHONY: install_mockgen
-install_mockgen:
-	@bin/install_mockgen $(mockgen_version)
-
-.PHONY: install
-install: install_mockgen
 
 # ----
 
@@ -41,11 +30,6 @@ fmt:
 tidy:
 	@printf "\nRunning go mod tidy...\n"
 	@go mod tidy
-
-#.PHONY: generate
-#generate:
-#	@printf "\nRunning go generate...\n"
-#	@go generate -x ./...
 
 .PHONY: lint
 lint: fmt tidy

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package grpc // import "arcadium.dev/core/server/grpc"
+package grpc // import "arcadium.dev/core/grpc"
 
 /*
 import (

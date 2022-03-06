@@ -1,4 +1,4 @@
-// Copyright 2021 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,22 +14,44 @@
 
 package test // import "arcadium.dev/core/test
 
+import (
+	"sync"
+)
+
 type (
 	// StringBuffer implements a simple buffer that can be used in tests.  It
 	// implements the io.Writer interface. Each write will append a string
 	// to the Buffer.
 	StringBuffer struct {
-		Buffer []string
+		lock   sync.RWMutex
+		buffer []string
 	}
 )
 
 // NewStringBuffer returns a StringBuffer.
 func NewStringBuffer() *StringBuffer {
-	return &StringBuffer{Buffer: make([]string, 0)}
+	return &StringBuffer{buffer: make([]string, 0)}
 }
 
 // Write implements the io.Writer interface.
 func (l *StringBuffer) Write(p []byte) (int, error) {
-	l.Buffer = append(l.Buffer, string(p))
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	l.buffer = append(l.buffer, string(p))
 	return len(p), nil
+}
+
+func (l *StringBuffer) Len() int {
+	l.lock.RLock()
+	defer l.lock.RUnlock()
+
+	return len(l.buffer)
+}
+
+func (l *StringBuffer) Index(i int) string {
+	l.lock.RLock()
+	defer l.lock.RUnlock()
+
+	return l.buffer[i]
 }

@@ -1,4 +1,4 @@
-// Copyright 2021 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,24 +26,19 @@ import (
 	"github.com/go-kit/log/level"
 )
 
+var (
+	DefaultLogger Logger
+)
+
+func init() {
+	DefaultLogger, _ = New()
+}
+
 type (
 	// Logger is the interface for all logging operations.
-	Logger interface {
-		// Debug logs a debug level message.
-		Debug(...interface{})
-
-		// Info logs an info level message.
-		Info(...interface{})
-
-		// Warn logs a warn level message.
-		Warn(...interface{})
-
-		// Error logs an error level message.
-		Error(...interface{})
-
-		// With returns a new contextual logger with keyvals prepended to those
-		// passed to calls to log.
-		With(...interface{}) Logger
+	Logger struct {
+		level  Level
+		logger log.Logger
 	}
 
 	// Option provides for Logger configuration.
@@ -56,7 +51,7 @@ type (
 	Level uint
 
 	// Format defines the output formats of the logger. Supported formats are
-	// FormatJSON (the default), FormatLogfmt, and FormatNop (no loggin).
+	// FormatLogfmt (the default), FormatJSON, and FormatNop (no logging).
 	Format uint
 )
 
@@ -95,47 +90,54 @@ const (
 var (
 	// ErrInvalidLevel will be returned when the level given to the WirhLevel
 	// option is invalid.
-	ErrInvalidLevel = errors.New("Invalid Level")
+	ErrInvalidLevel = errors.New("invalid level")
 
 	// ErrInvalidFormat will be returned when the format given to the WithFormat
 	// options is invalid.
-	ErrInvalidFormat = errors.New("Invvalid Format")
+	ErrInvalidFormat = errors.New("invalid format")
 
 	// ErrInvalidOutput will be returned when the output writer given to WithOuput
 	// is nil.
-	ErrInvalidOutput = errors.New("Invalid Format")
+	ErrInvalidOutput = errors.New("invalid output")
 )
 
 // New returns a Logger.
 func New(opts ...Option) (Logger, error) {
-	l := &logger{
-		opts: options{
-			level:  LevelInfo,
-			format: FormatJSON,
-			writer: os.Stderr,
-		},
+	o := options{
+		level:       LevelInfo,
+		format:      FormatLogfmt,
+		writer:      os.Stdout,
+		timestamped: true,
 	}
-
 	for _, opt := range opts {
-		opt.apply(&l.opts)
+		opt.apply(&o)
 	}
-	if l.opts.level >= LevelInvalid {
-		return nil, fmt.Errorf("%w: %d", ErrInvalidLevel, l.opts.level)
+	if o.level >= LevelInvalid {
+		return Logger{}, fmt.Errorf("%w: %d", ErrInvalidLevel, o.level)
 	}
-	if l.opts.format >= FormatInvalid {
-		return nil, fmt.Errorf("%w: %d", ErrInvalidFormat, l.opts.format)
+	if o.format >= FormatInvalid {
+		return Logger{}, fmt.Errorf("%w: %d", ErrInvalidFormat, o.format)
 	}
-	if l.opts.writer == nil {
-		return nil, ErrInvalidOutput
+	if o.writer == nil {
+		return Logger{}, ErrInvalidOutput
 	}
 
-	switch l.opts.format {
+	l := Logger{level: o.level}
+
+	switch o.format {
 	case FormatJSON:
-		l.logger = log.NewJSONLogger(log.NewSyncWriter(l.opts.writer))
+		l.logger = log.NewJSONLogger(log.NewSyncWriter(o.writer))
 	case FormatLogfmt:
-		l.logger = log.NewLogfmtLogger(log.NewSyncWriter(l.opts.writer))
+		l.logger = log.NewLogfmtLogger(log.NewSyncWriter(o.writer))
 	case FormatNop:
 		l.logger = log.NewNopLogger()
+	}
+
+	if o.timestamped {
+		l.logger = log.With(l.logger, "ts", log.DefaultTimestampUTC)
+	}
+	if o.asDefault {
+		DefaultLogger = l
 	}
 
 	return l, nil
@@ -149,7 +151,7 @@ func WithLevel(level Level) Option {
 }
 
 // WithFormat allows the format to be configured. The default format is
-// FormatJSON.
+// FormatLogfmt.
 func WithFormat(format Format) Option {
 	return newOption(func(opts *options) {
 		opts.format = format
@@ -157,47 +159,82 @@ func WithFormat(format Format) Option {
 }
 
 // WithOutput allows the format to be configured. The default writer is
-// os.Stderr.
+// os.Stdout.
 func WithOutput(writer io.Writer) Option {
 	return newOption(func(opts *options) {
 		opts.writer = writer
 	})
 }
 
+// WithoutTimestamp disables the use of a timestamp for logs.
+// Useful for unit tests.
+func WithoutTimestamp() Option {
+	return newOption(func(opts *options) {
+		opts.timestamped = false
+	})
+}
+
+// As default sets the DefaultLogger.
+func AsDefault() Option {
+	return newOption(func(opts *options) {
+		opts.asDefault = true
+	})
+}
+
 // Debug logs a debug level message.
-func (l *logger) Debug(kv ...interface{}) {
-	if l.opts.level > LevelDebug {
+func (l Logger) Debug(kv ...interface{}) {
+	if l.level > LevelDebug {
 		return
 	}
 	level.Debug(l.logger).Log(kv...)
 }
 
+// Debug logs an debug level message to the default logger.
+func Debug(kv ...interface{}) {
+	DefaultLogger.Debug(kv...)
+}
+
 // Info logs an info level message.
-func (l *logger) Info(kv ...interface{}) {
-	if l.opts.level > LevelInfo {
+func (l Logger) Info(kv ...interface{}) {
+	if l.level > LevelInfo {
 		return
 	}
 	level.Info(l.logger).Log(kv...)
 }
 
+// Info logs an info level message to the default logger.
+func Info(kv ...interface{}) {
+	DefaultLogger.Info(kv...)
+}
+
 // Warn logs a warn level message.
-func (l *logger) Warn(kv ...interface{}) {
-	if l.opts.level > LevelWarn {
+func (l Logger) Warn(kv ...interface{}) {
+	if l.level > LevelWarn {
 		return
 	}
 	level.Warn(l.logger).Log(kv...)
 }
 
+// Warn logs a warn level message to the default logger.
+func Warn(kv ...interface{}) {
+	DefaultLogger.Warn(kv...)
+}
+
 // Error logs an error level message.
-func (l *logger) Error(kv ...interface{}) {
+func (l Logger) Error(kv ...interface{}) {
 	level.Error(l.logger).Log(kv...)
+}
+
+// Error logs an error level message to the default logger.
+func Error(kv ...interface{}) {
+	DefaultLogger.Error(kv...)
 }
 
 // With returns a new contextual logger with keyvals prepended to those
 // passed to calls to log.
-func (l *logger) With(kv ...interface{}) Logger {
-	return &logger{
-		opts:   l.opts,
+func (l Logger) With(kv ...interface{}) Logger {
+	return Logger{
+		level:  l.level,
 		logger: log.With(l.logger, kv...),
 	}
 }
@@ -224,10 +261,10 @@ func ToLevel(l string) Level {
 func ToFormat(f string) Format {
 	format := FormatInvalid
 	switch strings.ToLower(f) {
-	case "json", "": // An unset format string defaults to FormatJSON.
-		format = FormatJSON
-	case "logfmt":
+	case "logfmt", "": // An unset format string defaults to FormatLogfmt.
 		format = FormatLogfmt
+	case "json":
+		format = FormatJSON
 	case "nop":
 		format = FormatNop
 	default:
@@ -243,20 +280,20 @@ func NewContextWithLogger(ctx context.Context, logger Logger) context.Context {
 
 // LoggerFromContext returns the logger for the current request.
 func LoggerFromContext(ctx context.Context) Logger {
-	logger, _ := ctx.Value(loggerContextKey).(Logger)
+	logger, ok := ctx.Value(loggerContextKey).(Logger)
+	if !ok {
+		logger, _ = New(WithFormat(FormatNop))
+	}
 	return logger
 }
 
 type (
-	logger struct {
-		opts   options
-		logger log.Logger
-	}
-
 	options struct {
-		level  Level
-		format Format
-		writer io.Writer
+		level       Level
+		format      Format
+		writer      io.Writer
+		timestamped bool
+		asDefault   bool
 	}
 
 	option struct {
@@ -268,6 +305,10 @@ type (
 
 const (
 	loggerContextKey = contextKey(iota + 1)
+)
+
+var (
+	timestamped = true // Setting to false disables timestamps for unit testing.
 )
 
 func newOption(f func(*options)) *option {

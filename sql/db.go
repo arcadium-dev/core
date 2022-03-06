@@ -1,4 +1,4 @@
-// Copyright 2021 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,66 +12,87 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sql // import "arcadium.dev/core/sql"
+package sql
 
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"net/url"
 	"time"
-
-	"arcadium.dev/core/errors"
 )
 
-// Open opens a database specified by its config. The config will
-// provide database driver name and a driver-specific data source name.
-func Open(config Config, opts ...Option) (*sql.DB, error) {
-	db, err := sql.Open(config.DriverName(), config.DSN())
+// Open opens a database specified by its database driver name and a
+// driver-specific connect url.
+func Open(driver, connectURL string, logger Logger) (*DB, error) {
+	db, err := open(driver, connectURL)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open %s database: %w", driver, err)
 	}
 
-	// Set options
-	o := &options{}
-	for _, opt := range opts {
-		opt.apply(o)
+	if err := connect(db, logger); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to connect to the database: %w", err)
 	}
 
-	// If there is a migration, run it against the sql db.
-	if o.migration != nil {
-		if err := Connect(db); err != nil {
-			return nil, err
-		}
-		if err := o.migration(db); err != nil {
-			return nil, err
-		}
+	var (
+		user, host string
+	)
+
+	u, err := url.Parse(connectURL)
+	if err == nil {
+		user = u.User.Username()
+		host = u.Host
 	}
-	return db, nil
+	logger.Info("msg", "connected to database", "driver", driver, "user", user, "host", host)
+
+	return &DB{DB: db}, nil
 }
 
-const (
-	timeout = 30
+type (
+	// DB is a simple wrapper of sql.DB.
+	DB struct {
+		*sql.DB
+	}
+
+	// Logger defines the logger needed by the sql package.
+	Logger interface {
+		Info(...interface{})
+	}
 )
 
-// Connect establishes a connection to the database. It will
-func Connect(db *sql.DB) error {
-	retryCtx, retryCancel := context.WithTimeout(context.Background(), timeout*time.Second)
-	defer retryCancel()
+var (
+	timeout time.Duration = 30 * time.Second
 
-	prevRetry, currRetry := time.Duration(1), time.Duration(1)
+	// open allows for insertion of mock open functions.
+	open = sql.Open
 
-	for {
-		select {
-		case <-time.After(currRetry * time.Second):
-			nextRetry := currRetry + prevRetry
-			prevRetry, currRetry = currRetry, nextRetry
+	// connect allows for insertion of mock connect functions.
+	connect = func(db *sql.DB, logger Logger) error {
+		count := 0
 
-			if err := db.PingContext(retryCtx); err != nil {
-				continue
+		retryCtx, retryCancel := context.WithTimeout(context.Background(), timeout)
+		defer retryCancel()
+
+		prevRetry, currRetry := time.Duration(1), time.Duration(1)
+		for done := false; !done; {
+			select {
+			case <-time.After(currRetry * time.Second):
+				nextRetry := currRetry + prevRetry
+				prevRetry, currRetry = currRetry, nextRetry
+
+				if err := db.PingContext(retryCtx); err != nil {
+					count++
+					logger.Info("msg", "ping failed, retrying...", "count", count, "error", err.Error())
+					continue
+				}
+				done = true
+
+			case <-retryCtx.Done():
+				return retryCtx.Err()
 			}
-			return nil
-
-		case <-retryCtx.Done():
-			return errors.Wrapf(retryCtx.Err(), "failed to connect to the database")
 		}
+
+		return nil
 	}
-}
+)

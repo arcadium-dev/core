@@ -1,4 +1,4 @@
-// Copyright 2021 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,23 +20,22 @@ import (
 	"arcadium.dev/core/test"
 )
 
-func TestLogger(t *testing.T) {
+func TestLog(t *testing.T) {
 	t.Run("Empty Env", func(t *testing.T) {
 		cfg := setupLogger(t, test.Env(nil))
 
-		if cfg.Level() != "" || cfg.File() != "" || cfg.Format() != "" {
+		if cfg.Level() != "" || cfg.Format() != "" {
 			t.Error("incorrect logging config for an empty environment")
 		}
 	})
 
 	t.Run("Full Env", func(t *testing.T) {
 		cfg := setupLogger(t, test.Env(map[string]string{
-			"LOG_LEVEL":  "level",
-			"LOG_FILE":   "file",
-			"LOG_FORMAT": "format",
+			"LOG_LEVEL":  "LEVEL",
+			"LOG_FORMAT": "FORMAT",
 		}))
 
-		if cfg.Level() != "level" || cfg.File() != "file" || cfg.Format() != "format" {
+		if cfg.Level() != "level" || cfg.Format() != "format" {
 			t.Error("incorrect logging config for a full environment")
 		}
 	})
@@ -46,7 +45,7 @@ func TestLogger(t *testing.T) {
 			"LOG_LEVEL": "level",
 		}))
 
-		if cfg.Level() != "level" || cfg.File() != "" || cfg.Format() != "" {
+		if cfg.Level() != "level" || cfg.Format() != "" {
 			t.Error("incorrect logging config for a partial environment")
 		}
 	})
@@ -54,11 +53,10 @@ func TestLogger(t *testing.T) {
 	t.Run("WithPrefix", func(t *testing.T) {
 		cfg := setupLogger(t, test.Env(map[string]string{
 			"PREFIX_LOG_LEVEL":  "level",
-			"PREFIX_LOG_FILE":   "file",
 			"PREFIX_LOG_FORMAT": "format",
 		}), WithPrefix("prefix"))
 
-		if cfg.Level() != "level" || cfg.File() != "file" || cfg.Format() != "format" {
+		if cfg.Level() != "level" || cfg.Format() != "format" {
 			t.Error("incorrect logging config for a full environment")
 		}
 	})
@@ -70,7 +68,7 @@ func setupLogger(t *testing.T, e test.Env, opts ...Option) Logger {
 
 	cfg, err := NewLogger(opts...)
 	if err != nil {
-		t.Errorf("error occurred: %s", err)
+		t.Fatalf("error occurred: %s", err)
 	}
 	return cfg
 }

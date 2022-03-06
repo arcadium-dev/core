@@ -1,4 +1,4 @@
-// Copyright 2021 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,33 +17,36 @@ package config // import "arcadium.dev/core/config
 type (
 	// Option provides options when loading configuration information.
 	Option interface {
-		apply(*options)
+		Apply(*Options)
 	}
 )
 
 // WithPrefix adds a prefix to the name of the enviroment variables being referenced.
 func WithPrefix(prefix string) Option {
-	return newOption(func(opts *options) {
+	return newOption(func(opts *Options) {
 		if prefix != "" {
-			opts.prefix = prefix + "_" + opts.prefix
+			opts.Prefix = prefix + "_" + opts.Prefix
 		}
 	})
 }
 
 type (
-	options struct {
-		prefix string
+	// Options hold the config package options.
+	Options struct {
+		// Prefix, if set, will require the prefix to be present in the name of the
+		// environment variables associated with the config object.
+		Prefix string
 	}
 
 	option struct {
-		f func(*options)
+		f func(*Options)
 	}
 )
 
-func (o *option) apply(opts *options) {
-	o.f(opts)
+func newOption(f func(*Options)) *option {
+	return &option{f: f}
 }
 
-func newOption(f func(*options)) *option {
-	return &option{f: f}
+func (o *option) Apply(opts *Options) {
+	o.f(opts)
 }

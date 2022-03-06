@@ -46,8 +46,9 @@ func TestNewTLS(t *testing.T) {
 		if err == nil {
 			t.Errorf("Expected an error")
 		}
-		if err.Error() != "open bad cert: no such file or directory: Failed to load server certificate" {
-			t.Errorf("Unexpected err: %s", err)
+		expected := "failed to load server certificate: open bad cert: no such file or directory"
+		if err.Error() != expected {
+			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
@@ -65,8 +66,9 @@ func TestNewTLS(t *testing.T) {
 		if err == nil {
 			t.Errorf("Expected an error")
 		}
-		if err.Error() != "open bad key: no such file or directory: Failed to load server certificate" {
-			t.Errorf("Unexpected err: %s", err)
+		expected := "failed to load server certificate: open bad key: no such file or directory"
+		if err.Error() != expected {
+			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 
@@ -101,8 +103,9 @@ func TestNewTLS(t *testing.T) {
 		if err == nil {
 			t.Errorf("Expected an error")
 		}
-		if err.Error() != "open bad cacert: no such file or directory: Failed to load the client CA certificate" {
-			t.Errorf("Unexpected err: %s", err)
+		expected := "failed to load the client CA certificate: open bad cacert: no such file or directory"
+		if err.Error() != expected {
+			t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 		}
 	})
 

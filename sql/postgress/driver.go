@@ -1,4 +1,4 @@
-// Copyright 2021 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,11 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package trace // import "arcadium.dev/core/trace"
+package postgress
 
-//go:generate mockgen -package mocktrace -destination ./mock/tracer.go . Tracer
-
-// Tracer implements
-type Tracer interface {
-	// TODO
-}
+import (
+	_ "github.com/jackc/pgx/v4/stdlib" // Load the pgx driver.
+)
