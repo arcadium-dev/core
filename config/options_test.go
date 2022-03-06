@@ -1,4 +1,4 @@
-// Copyright 2021 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,20 +22,20 @@ func TestOptionsWithPrefix(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Test WithPrefix - empty prefix", func(t *testing.T) {
-		opts := &options{}
+		opts := &Options{}
 
-		WithPrefix("").apply(opts)
-		if opts.prefix != "" {
+		WithPrefix("").Apply(opts)
+		if opts.Prefix != "" {
 			t.Error("prefix should be empty")
 		}
 	})
 
 	t.Run("Test WithPrefix - non-empty prefix", func(t *testing.T) {
-		opts := &options{}
+		opts := &Options{}
 
-		WithPrefix("prefix").apply(opts)
-		if opts.prefix != "prefix_" {
-			t.Errorf("incorrect prefix: %s", opts.prefix)
+		WithPrefix("prefix").Apply(opts)
+		if opts.Prefix != "prefix_" {
+			t.Errorf("incorrect prefix: %s", opts.Prefix)
 		}
 	})
 }

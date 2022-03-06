@@ -1,4 +1,4 @@
-// Copyright 2021 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,12 @@ import (
 )
 
 func TestServer(t *testing.T) {
-	t.Run("Empty Env", func(t *testing.T) {
-		cfg := setupServer(t, test.Env(nil))
+	t.Run("Minimal Env", func(t *testing.T) {
+		cfg := setupServer(t, test.Env(map[string]string{
+			"SERVER_ADDR": "test_addr:42",
+		}))
 
-		if cfg.Addr() != "" || cfg.Cert() != "" || cfg.Key() != "" || cfg.CACert() != "" {
+		if cfg.Addr() != "test_addr:42" || cfg.Cert() != "" || cfg.Key() != "" || cfg.CACert() != "" {
 			t.Error("incorrect server config for an empty environment")
 		}
 	})
@@ -45,11 +47,12 @@ func TestServer(t *testing.T) {
 
 	t.Run("Partial Env", func(t *testing.T) {
 		cfg := setupServer(t, test.Env(map[string]string{
+			"SERVER_ADDR": "test_addr:42",
 			"SERVER_CERT": "/opt/cert.crt",
 			"SERVER_KEY":  "/opt/key.crt",
 		}))
 
-		if cfg.Addr() != "" || cfg.Cert() != "/opt/cert.crt" ||
+		if cfg.Addr() != "test_addr:42" || cfg.Cert() != "/opt/cert.crt" ||
 			cfg.Key() != "/opt/key.crt" || cfg.CACert() != "" {
 			t.Error("incorrect server config for a partial environment")
 		}

@@ -1,4 +1,4 @@
-// Copyright 2021 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,66 +15,53 @@
 package config // import "arcadium.dev/core/config/config
 
 import (
-	"github.com/kelseyhightower/envconfig"
+	"fmt"
+	"strings"
 
-	"arcadium.dev/core/errors"
+	"github.com/kelseyhightower/envconfig"
+)
+
+type (
+	// Logger holds the configuration information for a logger.
+	Logger struct {
+		level  string
+		format string
+	}
 )
 
 const (
 	logPrefix = "log"
 )
 
-type (
-	// Logger provides the configuration settings for a logger.
-	Logger interface {
-		// Level returns the configured log level.
-		Level() string
-		// File returns the configured log file.
-		File() string
-		// Format returns the configured log format.
-		Format() string
-	}
-)
-
 // NewLogger returns the configuration of a logger.
 func NewLogger(opts ...Option) (Logger, error) {
-	o := &options{}
+	o := &Options{}
 	for _, opt := range opts {
-		opt.apply(o)
+		opt.Apply(o)
 	}
-	prefix := o.prefix + logPrefix
+	prefix := o.Prefix + logPrefix
 
 	config := struct {
 		Level  string
-		File   string
 		Format string
 	}{}
 	if err := envconfig.Process(prefix, &config); err != nil {
-		return nil, errors.Wrapf(err, "failed to load %s configuration", prefix)
+		return Logger{}, fmt.Errorf("failed to load %s configuration: %w", prefix, err)
 	}
-	return &logger{
-		level:  config.Level,
-		file:   config.File,
-		format: config.Format,
+	return Logger{
+		level:  strings.TrimSpace(strings.ToLower(config.Level)),
+		format: strings.TrimSpace(strings.ToLower(config.Format)),
 	}, nil
 }
 
-type (
-	logger struct {
-		level  string // <PREFIX_>LOG_LEVEL
-		file   string // <PREFIX_>LOG_FILE
-		format string // <PREFIX_>LOG_FORMAT
-	}
-)
-
-func (l *logger) Level() string {
+// Level returns the logging level for the logger. The value is set from the
+// <PREFIX_>LOG_LEVEL environment variable.
+func (l Logger) Level() string {
 	return l.level
 }
 
-func (l *logger) File() string {
-	return l.file
-}
-
-func (l *logger) Format() string {
+// Format returns the logging format for the logger. The value is set from the
+// <PREFIX_>LOG_FORMAT environment variable.
+func (l Logger) Format() string {
 	return l.format
 }

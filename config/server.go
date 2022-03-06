@@ -1,4 +1,4 @@
-// Copyright 2021 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,86 +12,78 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "arcadium.dev/core/config/config
+package config // import "arcadium.dev/core/config
 
 import (
-	"github.com/kelseyhightower/envconfig"
+	"fmt"
+	"strings"
 
-	"arcadium.dev/core/errors"
+	"github.com/kelseyhightower/envconfig"
+)
+
+type (
+	// Server holds the configuration settings for a server.
+	Server struct {
+		addr   string
+		cert   string
+		key    string
+		cacert string
+	}
 )
 
 const (
 	serverPrefix = "server"
 )
 
-type (
-	// Server holds the configuration settings for a server.
-	Server interface {
-		// Addr returns the network address the server will listen on.
-		Addr() string
-
-		// Cert returns the filepath of the certificate.
-		Cert() string
-
-		// Key returns the filepath of the certificate key.
-		Key() string
-
-		// CACert returns the filepath of the certificate of the client CA.
-		// This is used when a mutual TLS connection is desired.
-		CACert() string
-	}
-)
-
 // NewServer returns the server configuration.
 func NewServer(opts ...Option) (Server, error) {
-	o := &options{}
+	o := &Options{}
 	for _, opt := range opts {
-		opt.apply(o)
+		opt.Apply(o)
 	}
-	prefix := o.prefix + serverPrefix
+	prefix := o.Prefix + serverPrefix
 
 	config := struct {
-		Addr   string
+		Addr   string `required:"true"`
 		Cert   string
 		Key    string
 		CACert string
 	}{}
 	if err := envconfig.Process(prefix, &config); err != nil {
-		return nil, errors.Wrapf(err, "failed to load %s configuration", prefix)
+		return Server{}, fmt.Errorf("failed to load %s configuration: %w", prefix, err)
 	}
 
-	return &server{
-		addr:   config.Addr,
-		cert:   config.Cert,
-		key:    config.Key,
-		cacert: config.CACert,
+	return Server{
+		addr:   strings.TrimSpace(config.Addr),
+		cert:   strings.TrimSpace(config.Cert),
+		key:    strings.TrimSpace(config.Key),
+		cacert: strings.TrimSpace(config.CACert),
 	}, nil
 }
 
-type (
-	server struct {
-		addr   string // <PREFIX_>SERVER_ADDR
-		cert   string // <PREFIX_>SERVER_CERT
-		key    string // <PREFIX_>SERVER_KEY
-		cacert string // <PREFIX_>SERVER_CACERT
-	}
-)
-
-func (s *server) Addr() string {
+// Addr returns the network address the server will listen on. The value is set
+// from the <PREFIX_>SERVER_ADDR environment variable.
+func (s Server) Addr() string {
 	return s.addr
 }
 
-func (s *server) Cert() string {
+// Cert returns the path of the certificate file. The value is set from the
+// <PREFIX_>SERVER_CERT environment variable.
+func (s Server) Cert() string {
 	return s.cert
 }
 
-// Key returns the filepath of the certificate key.
-func (s *server) Key() string {
+// Key returns the path of the certificate key file. The value is set from the
+// <PREFIX_>SERVER_KEY environment variable.
+func (s Server) Key() string {
 	return s.key
 }
 
-// CACert returns the filepath of the certificate of the client CA.
-// This is used when a mutual TLS connection is desired.
-func (s *server) CACert() string {
+// CACert returns the path of the certificate of the CA certificate file. This
+// is used when creating a TLS connection with an entity that is presenting a
+// certificate that is not signed by a well known CA available in the OS CA
+// bundle. The value is set from the <PREFIX_>SERVER_CACERT environment
+// variable.
+func (s Server) CACert() string {
 	return s.cacert
 }
