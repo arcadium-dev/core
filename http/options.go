@@ -1,4 +1,4 @@
-// Copyright 2021 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,43 +14,67 @@
 
 package http // import "arcadium.dev/core/server/http"
 
-/*
 import (
 	"crypto/tls"
+	"time"
+
+	"github.com/gorilla/mux"
 
 	"arcadium.dev/core/log"
 )
 
 type (
-	// Option provides options for configuring the creation of a http server.
-	Option interface {
+	// ServerOption provides options for configuring the creation of a http server.
+	ServerOption interface {
 		apply(*Server)
-	}
-
-	option struct {
-		f func(*Server)
 	}
 )
 
-func newOption(f func(*Server)) option {
-	return option{f: f}
+// WithServerAddr will configure the server with the listen address.
+func WithServerAddr(addr string) ServerOption {
+	return newServerOption(func(s *Server) {
+		s.addr = addr
+	})
 }
 
-func (o option) apply(s *Server) {
-	o.f(s)
-}
-
-// WithTLS will configure the server to require TLS.
-func WithTLS(cfg *tls.Config) Option {
-	return newOption(func(s *Server) {
+// WithServerTLS will configure the server to require TLS.
+func WithServerTLS(cfg *tls.Config) ServerOption {
+	return newServerOption(func(s *Server) {
 		s.server.TLSConfig = cfg
 	})
 }
 
-// WithLogger will add logging to the http server.
-func WithLogger(l log.Logger) Option {
-	return newOption(func(s *Server) {
-		s.logger = l
+// WithServerShutdownTimeout sets the timout for shutting down the server.
+func WithServerShutdownTimeout(timeout time.Duration) ServerOption {
+	return newServerOption(func(s *Server) {
+		s.shutdownTimeout = timeout
 	})
 }
-*/
+
+// WithServerLogger provides a logger to the server.
+func WithServerLogger(logger log.Logger) ServerOption {
+	return newServerOption(func(s *Server) {
+		s.logger = logger
+	})
+}
+
+// WithMetricsMiddleware provide middleware service to be added to the server.
+func WithMiddleware(mw ...mux.MiddlewareFunc) ServerOption {
+	return newServerOption(func(s *Server) {
+		s.middleware = append(s.middleware, mw...)
+	})
+}
+
+type (
+	serverOption struct {
+		f func(*Server)
+	}
+)
+
+func newServerOption(f func(*Server)) serverOption {
+	return serverOption{f: f}
+}
+
+func (o serverOption) apply(s *Server) {
+	o.f(s)
+}
