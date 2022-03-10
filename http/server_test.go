@@ -15,6 +15,7 @@
 package http
 
 import (
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -55,14 +56,7 @@ func TestServerNew(t *testing.T) {
 
 	t.Run("with tls enabled", func(t *testing.T) {
 		b, logger := setupLogger(t)
-		cfg := mockTLS{
-			cert: "../test/insecure/cert.pem",
-			key:  "../test/insecure/key.pem",
-		}
-		tlsConfig, err := config.NewTLS(cfg)
-		if err != nil {
-			t.Errorf("Failed to create tls config")
-		}
+		tlsConfig := setupTLS(t, "../test/insecure/cert.pem", "../test/insecure/key.pem", "", false)
 
 		NewServer(WithServerTLS(tlsConfig), WithServerLogger(logger))
 		if b.Len() != 1 {
@@ -76,15 +70,7 @@ func TestServerNew(t *testing.T) {
 
 	t.Run("with mtls enabled", func(t *testing.T) {
 		b, logger := setupLogger(t)
-		cfg := mockTLS{
-			cert:   "../test/insecure/cert.pem",
-			key:    "../test/insecure/key.pem",
-			cacert: "../test/insecure/rootCA.pem",
-		}
-		tlsConfig, err := config.NewTLS(cfg, config.WithMTLS())
-		if err != nil {
-			t.Errorf("Failed to create mtls config")
-		}
+		tlsConfig := setupTLS(t, "../test/insecure/cert.pem", "../test/insecure/key.pem", "../test/insecure/rootCA.pem", true)
 
 		NewServer(WithServerTLS(tlsConfig), WithServerLogger(logger))
 		if b.Len() != 1 {
@@ -175,15 +161,7 @@ func TestServerServe(t *testing.T) {
 	})
 
 	t.Run("serve mtls", func(t *testing.T) {
-		cfg := mockTLS{
-			cert:   "../test/insecure/cert.pem",
-			key:    "../test/insecure/key.pem",
-			cacert: "../test/insecure/rootCA.pem",
-		}
-		tlsConfig, err := config.NewTLS(cfg)
-		if err != nil {
-			t.Errorf("Failed to create mtls config")
-		}
+		tlsConfig := setupTLS(t, "../test/insecure/cert.pem", "../test/insecure/key.pem", "../test/insecure/rootCA.pem", true)
 		m := &mockService{}
 
 		s := NewServer(WithServerTLS(tlsConfig), WithServerAddr(":2424"))
@@ -206,7 +184,7 @@ func TestServerServe(t *testing.T) {
 		wg.Wait()
 
 		s.Shutdown()
-		err = <-result
+		err := <-result
 
 		if !m.shutdownCalled() {
 			t.Error("Expected shutdown to be called")
@@ -293,6 +271,38 @@ func setupLogger(t *testing.T) (*test.StringBuffer, log.Logger) {
 	return b, logger
 }
 
+func setupTLS(t *testing.T, cert, key, cacert string, mtls bool) *tls.Config {
+	t.Helper()
+
+	env := make(map[string]string)
+	if cert != "" {
+		env["TLS_CERT"] = cert
+	}
+	if key != "" {
+		env["TLS_KEY"] = key
+	}
+	if cacert != "" {
+		env["TLS_CACERT"] = cacert
+	}
+	test.Env(env).Set(t)
+
+	var opts []config.TLSOption
+	if mtls {
+		opts = append(opts, config.WithMTLS())
+	}
+
+	cfg, err := config.NewTLS()
+	if err != nil {
+		t.Errorf("error occurred: %s", err)
+	}
+
+	tlsConfig, err := cfg.TLSConfig(opts...)
+	if err != nil {
+		t.Errorf("error occurred: %s", err)
+	}
+	return tlsConfig
+}
+
 type (
 	mockService struct {
 		registerCalled, handlerCalled, panicCalled bool
@@ -336,22 +346,4 @@ func (m *mockService) shutdownCalled() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.shutdown
-}
-
-type (
-	mockTLS struct {
-		cert, key, cacert string
-	}
-)
-
-func (m mockTLS) Cert() string {
-	return m.cert
-}
-
-func (m mockTLS) Key() string {
-	return m.key
-}
-
-func (m mockTLS) CACert() string {
-	return m.cacert
 }
