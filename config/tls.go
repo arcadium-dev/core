@@ -19,28 +19,89 @@ import (
 	"crypto/x509"
 	"fmt"
 	"os"
+	"strings"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
-// NewTLS will create a *tls.Config given the config and options. This will
-// return an error if there is a problem loading the required certificate files.
-// If the WithMTLS option is specified, a client CA cert is required.
-func NewTLS(config TLS, opts ...TLSOption) (*tls.Config, error) {
+type (
+	// TLS holds the configuration settings for a TLS Cert.
+	TLS struct {
+		cert   string
+		key    string
+		cacert string
+	}
+)
+
+const (
+	tlsPrefix = "tls"
+)
+
+// NewTLS returns the tls configuration.
+func NewTLS(opts ...Option) (TLS, error) {
+	o := &Options{}
+	for _, opt := range opts {
+		opt.Apply(o)
+	}
+	prefix := o.Prefix + tlsPrefix
+
+	config := struct {
+		Cert   string
+		Key    string
+		CACert string
+	}{}
+	if err := envconfig.Process(prefix, &config); err != nil {
+		return TLS{}, fmt.Errorf("failed to load %s configuration: %w", prefix, err)
+	}
+
+	return TLS{
+		cert:   strings.TrimSpace(config.Cert),
+		key:    strings.TrimSpace(config.Key),
+		cacert: strings.TrimSpace(config.CACert),
+	}, nil
+}
+
+// Cert returns the path of the certificate file. The value is set from the
+// <PREFIX_>TLS_CERT environment variable.
+func (t TLS) Cert() string {
+	return t.cert
+}
+
+// Key returns the path of the certificate key file. The value is set from the
+// <PREFIX_>TLS_KEY environment variable.
+func (t TLS) Key() string {
+	return t.key
+}
+
+// CACert returns the path of the certificate of the CA certificate file. This
+// is used when creating a TLS connection with an entity that is presenting a
+// certificate that is not signed by a well known CA available in the OS CA
+// bundle. The value is set from the <PREFIX_>TLS_CACERT environment
+// variable.
+func (t TLS) CACert() string {
+	return t.cacert
+}
+
+// TLSConfig will create a *tls.Config given the options. This will return an error
+// if there is a problem loading the required certificate files.  If the
+// WithMTLS option is specified, a client CA cert is required.
+func (t TLS) TLSConfig(opts ...TLSOption) (*tls.Config, error) {
 	cfg := &tls.Config{}
 	for _, opt := range opts {
 		opt.apply(cfg)
 	}
 
-	// Load the server certificate.
-	cert, err := tls.LoadX509KeyPair(config.Cert(), config.Key())
+	// Load the tls certificate.
+	cert, err := tls.LoadX509KeyPair(t.cert, t.key)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load server certificate: %w", err)
+		return nil, fmt.Errorf("failed to load tls certificate: %w", err)
 	}
 	cfg.Certificates = append(cfg.Certificates, cert)
 
 	// If we are doing mTLS...
 	if cfg.ClientAuth == tls.RequireAndVerifyClientCert {
 		// .. and we have a CA cert
-		caCertCfg := config.CACert()
+		caCertCfg := t.cacert
 		if caCertCfg != "" {
 			// ... create a new, empty CA certificate pool and add client's CA cert to it.
 			cfg.ClientCAs = x509.NewCertPool()
@@ -56,18 +117,6 @@ func NewTLS(config TLS, opts ...TLSOption) (*tls.Config, error) {
 }
 
 type (
-	// TLS contains the information necessary to create a tls.Config.
-	TLS interface {
-		// Cert returns the file name of the PEM encoded public key.
-		Cert() string
-
-		// Key returns the file name of the PEM encoded private key.
-		Key() string
-
-		// CACert returns the file name of the PEM encoded public key of the client CA.
-		CACert() string
-	}
-
 	// TLSOption provides options for configuring the creation of a tls.Config.
 	TLSOption interface {
 		apply(*tls.Config)

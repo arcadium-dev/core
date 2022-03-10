@@ -24,10 +24,7 @@ import (
 type (
 	// Server holds the configuration settings for a server.
 	Server struct {
-		addr   string
-		cert   string
-		key    string
-		cacert string
+		addr string
 	}
 )
 
@@ -44,20 +41,14 @@ func NewServer(opts ...Option) (Server, error) {
 	prefix := o.Prefix + serverPrefix
 
 	config := struct {
-		Addr   string `required:"true"`
-		Cert   string
-		Key    string
-		CACert string
+		Addr string `required:"true"`
 	}{}
 	if err := envconfig.Process(prefix, &config); err != nil {
 		return Server{}, fmt.Errorf("failed to load %s configuration: %w", prefix, err)
 	}
 
 	return Server{
-		addr:   strings.TrimSpace(config.Addr),
-		cert:   strings.TrimSpace(config.Cert),
-		key:    strings.TrimSpace(config.Key),
-		cacert: strings.TrimSpace(config.CACert),
+		addr: strings.TrimSpace(config.Addr),
 	}, nil
 }
 
@@ -65,25 +56,4 @@ func NewServer(opts ...Option) (Server, error) {
 // from the <PREFIX_>SERVER_ADDR environment variable.
 func (s Server) Addr() string {
 	return s.addr
-}
-
-// Cert returns the path of the certificate file. The value is set from the
-// <PREFIX_>SERVER_CERT environment variable.
-func (s Server) Cert() string {
-	return s.cert
-}
-
-// Key returns the path of the certificate key file. The value is set from the
-// <PREFIX_>SERVER_KEY environment variable.
-func (s Server) Key() string {
-	return s.key
-}
-
-// CACert returns the path of the certificate of the CA certificate file. This
-// is used when creating a TLS connection with an entity that is presenting a
-// certificate that is not signed by a well known CA available in the OS CA
-// bundle. The value is set from the <PREFIX_>SERVER_CACERT environment
-// variable.
-func (s Server) CACert() string {
-	return s.cacert
 }

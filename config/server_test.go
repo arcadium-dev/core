@@ -21,54 +21,23 @@ import (
 )
 
 func TestServer(t *testing.T) {
-	t.Run("Minimal Env", func(t *testing.T) {
+	t.Run("without prefix", func(t *testing.T) {
 		cfg := setupServer(t, test.Env(map[string]string{
 			"SERVER_ADDR": "test_addr:42",
 		}))
 
-		if cfg.Addr() != "test_addr:42" || cfg.Cert() != "" || cfg.Key() != "" || cfg.CACert() != "" {
-			t.Error("incorrect server config for an empty environment")
+		if cfg.Addr() != "test_addr:42" {
+			t.Error("incorrect server config")
 		}
 	})
 
-	t.Run("Full Env", func(t *testing.T) {
+	t.Run("with prefix", func(t *testing.T) {
 		cfg := setupServer(t, test.Env(map[string]string{
-			"SERVER_ADDR":   "test_addr:42",
-			"SERVER_CERT":   "/opt/cert.crt",
-			"SERVER_KEY":    "/opt/key.crt",
-			"SERVER_CACERT": "/opt/cacert.crt",
-		}))
-
-		if cfg.Addr() != "test_addr:42" || cfg.Cert() != "/opt/cert.crt" ||
-			cfg.Key() != "/opt/key.crt" || cfg.CACert() != "/opt/cacert.crt" {
-			t.Error("incorrect server config for a full environment")
-		}
-	})
-
-	t.Run("Partial Env", func(t *testing.T) {
-		cfg := setupServer(t, test.Env(map[string]string{
-			"SERVER_ADDR": "test_addr:42",
-			"SERVER_CERT": "/opt/cert.crt",
-			"SERVER_KEY":  "/opt/key.crt",
-		}))
-
-		if cfg.Addr() != "test_addr:42" || cfg.Cert() != "/opt/cert.crt" ||
-			cfg.Key() != "/opt/key.crt" || cfg.CACert() != "" {
-			t.Error("incorrect server config for a partial environment")
-		}
-	})
-
-	t.Run("WithPrefix", func(t *testing.T) {
-		cfg := setupServer(t, test.Env(map[string]string{
-			"FANCY_SERVER_ADDR":   "test_addr:42",
-			"FANCY_SERVER_CERT":   "/opt/cert.crt",
-			"FANCY_SERVER_KEY":    "/opt/key.crt",
-			"FANCY_SERVER_CACERT": "/opt/cacert.crt",
+			"FANCY_SERVER_ADDR": "test_addr:42",
 		}), WithPrefix("fancy"))
 
-		if cfg.Addr() != "test_addr:42" || cfg.Cert() != "/opt/cert.crt" ||
-			cfg.Key() != "/opt/key.crt" || cfg.CACert() != "/opt/cacert.crt" {
-			t.Error("incorrect server config for a full environment")
+		if cfg.Addr() != "test_addr:42" {
+			t.Error("incorrect server config")
 		}
 	})
 }
