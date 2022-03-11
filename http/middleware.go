@@ -54,9 +54,9 @@ func init() {
 	}, []string{"method", "path"})
 }
 
-// TrackMetrics is middleware which provides tracking of key metrics for incoming
+// Metrics is middleware which provides tracking of key metrics for incoming
 // HTTP requests.
-func TrackMetrics(next http.Handler) http.Handler {
+func Metrics(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Track concurrent requests.
 		concurrentRequests.Inc()
