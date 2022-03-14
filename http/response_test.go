@@ -15,73 +15,113 @@
 package http
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	cerrors "arcadium.dev/core/errors"
 )
 
 func TestResponse(t *testing.T) {
-	t.Run("no errors", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		Response(w)
+	ctx := context.Background()
 
-		checkHeader(t, w, "Content-Type", "application/json")
-		checkHeader(t, w, "X-Content-Type-Options", "nosniff")
-		if w.Code != http.StatusOK {
-			t.Errorf("Unexpected status: %d", w.Code)
-		}
-		expected := ""
-		if w.Body.String() != expected {
-			t.Errorf("\nExpected body %s\nActual body   %s", w.Body.String(), expected)
-		}
+	t.Run("nil error", func(t *testing.T) {
+		Response(nil, nil, nil)
 	})
 
-	t.Run("single error", func(t *testing.T) {
+	t.Run("invalid argument error", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		Response(w, BadRequestError(errors.New("invalid argument")))
+		Response(ctx, w, cerrors.ErrInvalidArgument)
 
 		checkHeader(t, w, "Content-Type", "application/json")
 		checkHeader(t, w, "X-Content-Type-Options", "nosniff")
+
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("Unexpected status: %d", w.Code)
 		}
-		expected := `{"errors":[{"status":400,"detail":"invalid argument"}]}` + "\n"
+		expected := `{"error":{"status":400,"detail":"invalid argument"}}` + "\n"
 		if w.Body.String() != expected {
 			t.Errorf("\nExpected body %s\nActual body   %s", expected, w.Body.String())
 		}
 	})
 
-	t.Run("mutliple errors", func(t *testing.T) {
+	t.Run("not found error", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		Response(w,
-			NotFoundError(errors.New("not found")),
-			ConflictError(errors.New("already exists")),
-			InternalServerError(errors.New("internal error")),
-			NotImplementedError(errors.New("not implemented")),
-		)
+		Response(ctx, w, cerrors.ErrNotFound)
 
 		checkHeader(t, w, "Content-Type", "application/json")
 		checkHeader(t, w, "X-Content-Type-Options", "nosniff")
+
 		if w.Code != http.StatusNotFound {
 			t.Errorf("Unexpected status: %d", w.Code)
 		}
-		expected := `{"errors":[{"status":404,"detail":"not found"},{"status":409,"detail":"already exists"},{"status":500,"detail":"internal error"},{"status":501,"detail":"not implemented"}]}` + "\n"
+		expected := `{"error":{"status":404,"detail":"not found"}}` + "\n"
 		if w.Body.String() != expected {
 			t.Errorf("\nExpected body %s\nActual body   %s", expected, w.Body.String())
 		}
 	})
 
-	t.Run("invalid status", func(t *testing.T) {
+	t.Run("already exists error", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		Response(w, ResponseError{Status: 1024, Detail: "foobar"})
+		Response(ctx, w, cerrors.ErrAlreadyExists)
 
 		checkHeader(t, w, "Content-Type", "application/json")
 		checkHeader(t, w, "X-Content-Type-Options", "nosniff")
+
+		if w.Code != http.StatusConflict {
+			t.Errorf("Unexpected status: %d", w.Code)
+		}
+		expected := `{"error":{"status":409,"detail":"already exists"}}` + "\n"
+		if w.Body.String() != expected {
+			t.Errorf("\nExpected body %s\nActual body   %s", expected, w.Body.String())
+		}
+	})
+
+	t.Run("not implemented error", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		Response(ctx, w, cerrors.ErrNotImplemented)
+
+		checkHeader(t, w, "Content-Type", "application/json")
+		checkHeader(t, w, "X-Content-Type-Options", "nosniff")
+
+		if w.Code != http.StatusNotImplemented {
+			t.Errorf("Unexpected status: %d", w.Code)
+		}
+		expected := `{"error":{"status":501,"detail":"not implemented"}}` + "\n"
+		if w.Body.String() != expected {
+			t.Errorf("\nExpected body %s\nActual body   %s", expected, w.Body.String())
+		}
+	})
+
+	t.Run("internal server error", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		Response(ctx, w, cerrors.ErrInternal)
+
+		checkHeader(t, w, "Content-Type", "application/json")
+		checkHeader(t, w, "X-Content-Type-Options", "nosniff")
+
 		if w.Code != http.StatusInternalServerError {
 			t.Errorf("Unexpected status: %d", w.Code)
 		}
-		expected := `{"errors":[{"status":500,"detail":"foobar"}]}` + "\n"
+		expected := `{"error":{"status":500,"detail":"internal error"}}` + "\n"
+		if w.Body.String() != expected {
+			t.Errorf("\nExpected body %s\nActual body   %s", expected, w.Body.String())
+		}
+	})
+
+	t.Run("unknown error", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		Response(ctx, w, errors.New("unknown error"))
+
+		checkHeader(t, w, "Content-Type", "application/json")
+		checkHeader(t, w, "X-Content-Type-Options", "nosniff")
+
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("Unexpected status: %d", w.Code)
+		}
+		expected := `{"error":{"status":500,"detail":"unknown error"}}` + "\n"
 		if w.Body.String() != expected {
 			t.Errorf("\nExpected body %s\nActual body   %s", expected, w.Body.String())
 		}
@@ -90,7 +130,7 @@ func TestResponse(t *testing.T) {
 
 func TestResponseError(t *testing.T) {
 	expected := `status=200, detail="foobar"`
-	err := ResponseError{Status: http.StatusOK, Detail: "foobar"}
+	err := responseError{Status: http.StatusOK, Detail: "foobar"}
 	if err.Error() != expected {
 		t.Errorf("\nExpected error %s\nActual error   %s", expected, err)
 	}
