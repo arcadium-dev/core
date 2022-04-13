@@ -130,7 +130,7 @@ func TestResponse(t *testing.T) {
 
 func TestResponseError(t *testing.T) {
 	expected := `status=200, detail="foobar"`
-	err := responseError{Status: http.StatusOK, Detail: "foobar"}
+	err := ResponseError{Status: http.StatusOK, Detail: "foobar"}
 	if err.Error() != expected {
 		t.Errorf("\nExpected error %s\nActual error   %s", expected, err)
 	}

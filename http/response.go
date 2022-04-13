@@ -61,7 +61,7 @@ func Response(ctx context.Context, w http.ResponseWriter, err error) {
 }
 
 func response(ctx context.Context, w http.ResponseWriter, status int, e error) {
-	err := responseError{Status: status}
+	err := ResponseError{Status: status}
 	if e != nil {
 		err.Detail = e.Error()
 	}
@@ -73,7 +73,7 @@ func response(ctx context.Context, w http.ResponseWriter, status int, e error) {
 	httpErrorCount.WithLabelValues(strconv.Itoa(err.Status)).Inc()
 
 	resp := struct {
-		Error responseError `json:"error,omitempty"`
+		Error ResponseError `json:"error,omitempty"`
 	}{
 		Error: err,
 	}
@@ -85,9 +85,9 @@ func response(ctx context.Context, w http.ResponseWriter, status int, e error) {
 }
 
 type (
-	// responseError provides additional information about problems encounted while
+	// ResponseError provides additional information about problems encounted while
 	// performing an operation. See: https://jsonapi.org/format/#error-objects
-	responseError struct {
+	ResponseError struct {
 		// Status is the http status code applicable to this problem.
 		Status int `json:"status,omitempty"`
 		// Detail is a human-readable explanation specific to this occurrence of
@@ -97,7 +97,7 @@ type (
 )
 
 // Error translates the error to a string.
-func (e responseError) Error() string {
+func (e ResponseError) Error() string {
 	return fmt.Sprintf("status=%d, detail=%q", e.Status, e.Detail)
 }
 
