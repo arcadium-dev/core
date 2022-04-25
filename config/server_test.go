@@ -16,15 +16,12 @@ package config
 
 import (
 	"testing"
-
-	"arcadium.dev/core/test"
 )
 
 func TestServer(t *testing.T) {
 	t.Run("without prefix", func(t *testing.T) {
-		cfg := setupServer(t, test.Env(map[string]string{
-			"SERVER_ADDR": "test_addr:42",
-		}))
+		t.Setenv("SERVER_ADDR", "test_addr:42")
+		cfg := setupServer(t)
 
 		if cfg.Addr() != "test_addr:42" {
 			t.Error("incorrect server config")
@@ -32,9 +29,8 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("with prefix", func(t *testing.T) {
-		cfg := setupServer(t, test.Env(map[string]string{
-			"FANCY_SERVER_ADDR": "test_addr:42",
-		}), WithPrefix("fancy"))
+		t.Setenv("FANCY_SERVER_ADDR", "test_addr:42")
+		cfg := setupServer(t, WithPrefix("fancy"))
 
 		if cfg.Addr() != "test_addr:42" {
 			t.Error("incorrect server config")
@@ -42,9 +38,8 @@ func TestServer(t *testing.T) {
 	})
 }
 
-func setupServer(t *testing.T, e test.Env, opts ...Option) Server {
+func setupServer(t *testing.T, opts ...Option) Server {
 	t.Helper()
-	e.Set(t)
 
 	cfg, err := NewServer(opts...)
 	if err != nil {

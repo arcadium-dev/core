@@ -16,8 +16,6 @@ package config
 
 import (
 	"testing"
-
-	"arcadium.dev/core/test"
 )
 
 func TestSQL(t *testing.T) {
@@ -34,9 +32,8 @@ func TestSQL(t *testing.T) {
 	})
 
 	t.Run("defaults", func(t *testing.T) {
-		cfg := setupSQL(t, test.Env(map[string]string{
-			"SQL_URL": "postgresql://user@cockroach:16567/db",
-		}))
+		t.Setenv("SQL_URL", "postgresql://user@cockroach:16567/db")
+		cfg := setupSQL(t)
 
 		if cfg.Driver() != "pgx" {
 			t.Errorf("Expected: %s, Actual: %s", "pgx", cfg.Driver())
@@ -45,10 +42,9 @@ func TestSQL(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		expectedURL := "postgresql://user@cockroach:26257/db?sslmode=verify-full&sslrootcert=%2Fetc%2Fcerts%2Fca.crt"
-		cfg := setupSQL(t, test.Env(map[string]string{
-			"SQL_DRIVER": "postgres",
-			"SQL_URL":    expectedURL,
-		}))
+		t.Setenv("SQL_DRIVER", "postgres")
+		t.Setenv("SQL_URL", expectedURL)
+		cfg := setupSQL(t)
 
 		if cfg.Driver() != "postgres" {
 			t.Errorf("Unexpected driver: %s", cfg.Driver())
@@ -59,9 +55,8 @@ func TestSQL(t *testing.T) {
 	})
 }
 
-func setupSQL(t *testing.T, e test.Env, opts ...Option) SQL {
+func setupSQL(t *testing.T, opts ...Option) SQL {
 	t.Helper()
-	e.Set(t)
 
 	cfg, err := NewSQL(opts...)
 	if err != nil {

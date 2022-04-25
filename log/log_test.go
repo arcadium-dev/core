@@ -6,8 +6,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"arcadium.dev/core/test"
 )
 
 func TestWithLevel(t *testing.T) {
@@ -71,7 +69,7 @@ func TestWithFormat(t *testing.T) {
 func TestWithOutput(t *testing.T) {
 	var (
 		opts options
-		b    = test.NewStringBuffer()
+		b    = NewStringBuffer()
 	)
 	o := WithOutput(b)
 	if o == nil {
@@ -160,7 +158,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Test valid output option", func(t *testing.T) {
-		l, err := New(WithOutput(test.NewStringBuffer()))
+		l, err := New(WithOutput(NewStringBuffer()))
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
@@ -211,7 +209,7 @@ func TestNew(t *testing.T) {
 
 func TestDebug(t *testing.T) {
 	t.Run("Level set to debug", func(t *testing.T) {
-		b := test.NewStringBuffer()
+		b := NewStringBuffer()
 		l, err := New(
 			WithLevel(LevelDebug),
 			WithFormat(FormatLogfmt),
@@ -239,7 +237,7 @@ func TestDebug(t *testing.T) {
 	})
 
 	t.Run("Level set above debug", func(t *testing.T) {
-		b := test.NewStringBuffer()
+		b := NewStringBuffer()
 		l, err := New(
 			WithLevel(LevelInfo),
 			WithFormat(FormatLogfmt),
@@ -257,7 +255,7 @@ func TestDebug(t *testing.T) {
 	})
 
 	t.Run("Test global debug", func(t *testing.T) {
-		b := test.NewStringBuffer()
+		b := NewStringBuffer()
 		l, err := New(
 			WithLevel(LevelDebug),
 			WithOutput(b),
@@ -290,7 +288,7 @@ func TestDebug(t *testing.T) {
 
 func TestInfo(t *testing.T) {
 	t.Run("Level set to info", func(t *testing.T) {
-		b := test.NewStringBuffer()
+		b := NewStringBuffer()
 		l, err := New(
 			WithLevel(LevelInfo),
 			WithFormat(FormatJSON),
@@ -318,7 +316,7 @@ func TestInfo(t *testing.T) {
 	})
 
 	t.Run("Level set above info", func(t *testing.T) {
-		b := test.NewStringBuffer()
+		b := NewStringBuffer()
 		l, err := New(
 			WithLevel(LevelWarn),
 			WithFormat(FormatJSON),
@@ -337,7 +335,7 @@ func TestInfo(t *testing.T) {
 	})
 
 	t.Run("Test global info", func(t *testing.T) {
-		b := test.NewStringBuffer()
+		b := NewStringBuffer()
 		l, err := New(
 			WithLevel(LevelInfo),
 			WithOutput(b),
@@ -370,7 +368,7 @@ func TestInfo(t *testing.T) {
 
 func TestWarn(t *testing.T) {
 	t.Run("Level set to warn", func(t *testing.T) {
-		b := test.NewStringBuffer()
+		b := NewStringBuffer()
 		l, err := New(
 			WithLevel(LevelWarn),
 			WithFormat(FormatLogfmt),
@@ -398,7 +396,7 @@ func TestWarn(t *testing.T) {
 	})
 
 	t.Run("Level set above warn", func(t *testing.T) {
-		b := test.NewStringBuffer()
+		b := NewStringBuffer()
 		l, err := New(
 			WithLevel(LevelError),
 			WithFormat(FormatLogfmt),
@@ -416,7 +414,7 @@ func TestWarn(t *testing.T) {
 	})
 
 	t.Run("Test global warn", func(t *testing.T) {
-		b := test.NewStringBuffer()
+		b := NewStringBuffer()
 		l, err := New(
 			WithLevel(LevelWarn),
 			WithOutput(b),
@@ -449,7 +447,7 @@ func TestWarn(t *testing.T) {
 
 func TestError(t *testing.T) {
 	t.Run("Level set to error", func(t *testing.T) {
-		b := test.NewStringBuffer()
+		b := NewStringBuffer()
 		l, err := New(
 			WithLevel(LevelError),
 			WithFormat(FormatJSON),
@@ -477,7 +475,7 @@ func TestError(t *testing.T) {
 	})
 
 	t.Run("Test global error", func(t *testing.T) {
-		b := test.NewStringBuffer()
+		b := NewStringBuffer()
 		l, err := New(
 			WithLevel(LevelError),
 			WithOutput(b),
@@ -509,7 +507,7 @@ func TestError(t *testing.T) {
 }
 
 func TestLogging(t *testing.T) {
-	b := test.NewStringBuffer()
+	b := NewStringBuffer()
 	l, err := New(
 		WithLevel(LevelDebug),
 		WithOutput(b),
@@ -546,7 +544,7 @@ func TestLogging(t *testing.T) {
 }
 
 func TestWith(t *testing.T) {
-	b := test.NewStringBuffer()
+	b := NewStringBuffer()
 	l, err := New(
 		WithFormat(FormatLogfmt),
 		WithOutput(b),
@@ -615,7 +613,7 @@ func TestToFormat(t *testing.T) {
 
 func TestLoggerContext(t *testing.T) {
 	t.Run("insert, extract success", func(t *testing.T) {
-		b := test.NewStringBuffer()
+		b := NewStringBuffer()
 		l, err := New(
 			WithFormat(FormatLogfmt),
 			WithOutput(b),
