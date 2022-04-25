@@ -26,7 +26,6 @@ import (
 
 	"arcadium.dev/core/config"
 	"arcadium.dev/core/log"
-	"arcadium.dev/core/test"
 )
 
 func TestServerNew(t *testing.T) {
@@ -254,10 +253,10 @@ func TestServerRequestLogging(t *testing.T) {
 	}
 }
 
-func setupLogger(t *testing.T) (*test.StringBuffer, log.Logger) {
+func setupLogger(t *testing.T) (*log.StringBuffer, log.Logger) {
 	t.Helper()
 
-	b := test.NewStringBuffer()
+	b := log.NewStringBuffer()
 	logger, err := log.New(
 		log.WithLevel(log.LevelDebug),
 		log.WithFormat(log.FormatLogfmt),
@@ -274,17 +273,15 @@ func setupLogger(t *testing.T) (*test.StringBuffer, log.Logger) {
 func setupTLS(t *testing.T, cert, key, cacert string, mtls bool) *tls.Config {
 	t.Helper()
 
-	env := make(map[string]string)
 	if cert != "" {
-		env["TLS_CERT"] = cert
+		t.Setenv("TLS_CERT", cert)
 	}
 	if key != "" {
-		env["TLS_KEY"] = key
+		t.Setenv("TLS_KEY", key)
 	}
 	if cacert != "" {
-		env["TLS_CACERT"] = cacert
+		t.Setenv("TLS_CACERT", cacert)
 	}
-	test.Env(env).Set(t)
 
 	var opts []config.TLSOption
 	if mtls {

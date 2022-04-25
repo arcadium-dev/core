@@ -17,8 +17,6 @@ package config
 import (
 	"crypto/tls"
 	"testing"
-
-	"arcadium.dev/core/test"
 )
 
 const (
@@ -33,7 +31,7 @@ const (
 
 func TestTLS(t *testing.T) {
 	t.Run("Minimal Env", func(t *testing.T) {
-		cfg := setupTLS(t, test.Env(map[string]string{}))
+		cfg := setupTLS(t)
 
 		if cfg.Cert() != "" || cfg.Key() != "" || cfg.CACert() != "" {
 			t.Error("incorrect tls config for an empty environment")
@@ -41,11 +39,10 @@ func TestTLS(t *testing.T) {
 	})
 
 	t.Run("Full Env", func(t *testing.T) {
-		cfg := setupTLS(t, test.Env(map[string]string{
-			"TLS_CERT":   "/opt/cert.crt",
-			"TLS_KEY":    "/opt/key.crt",
-			"TLS_CACERT": "/opt/cacert.crt",
-		}))
+		t.Setenv("TLS_CERT", "/opt/cert.crt")
+		t.Setenv("TLS_KEY", "/opt/key.crt")
+		t.Setenv("TLS_CACERT", "/opt/cacert.crt")
+		cfg := setupTLS(t)
 
 		if cfg.Cert() != "/opt/cert.crt" || cfg.Key() != "/opt/key.crt" || cfg.CACert() != "/opt/cacert.crt" {
 			t.Error("incorrect tls config for a full environment")
@@ -53,11 +50,10 @@ func TestTLS(t *testing.T) {
 	})
 
 	t.Run("WithPrefix", func(t *testing.T) {
-		cfg := setupTLS(t, test.Env(map[string]string{
-			"FANCY_TLS_CERT":   "/opt/cert.crt",
-			"FANCY_TLS_KEY":    "/opt/key.crt",
-			"FANCY_TLS_CACERT": "/opt/cacert.crt",
-		}), WithPrefix("fancy"))
+		t.Setenv("FANCY_TLS_CERT", "/opt/cert.crt")
+		t.Setenv("FANCY_TLS_KEY", "/opt/key.crt")
+		t.Setenv("FANCY_TLS_CACERT", "/opt/cacert.crt")
+		cfg := setupTLS(t, WithPrefix("fancy"))
 
 		if cfg.Cert() != "/opt/cert.crt" || cfg.Key() != "/opt/key.crt" || cfg.CACert() != "/opt/cacert.crt" {
 			t.Error("incorrect tls config for a full environment")
@@ -174,9 +170,8 @@ func TestWithMTLS(t *testing.T) {
 	}
 }
 
-func setupTLS(t *testing.T, e test.Env, opts ...Option) TLS {
+func setupTLS(t *testing.T, opts ...Option) TLS {
 	t.Helper()
-	e.Set(t)
 
 	cfg, err := NewTLS(opts...)
 	if err != nil {

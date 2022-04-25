@@ -16,13 +16,11 @@ package config
 
 import (
 	"testing"
-
-	"arcadium.dev/core/test"
 )
 
 func TestLog(t *testing.T) {
 	t.Run("Empty Env", func(t *testing.T) {
-		cfg := setupLogger(t, test.Env(nil))
+		cfg := setupLogger(t)
 
 		if cfg.Level() != "" || cfg.Format() != "" {
 			t.Error("incorrect logging config for an empty environment")
@@ -30,10 +28,9 @@ func TestLog(t *testing.T) {
 	})
 
 	t.Run("Full Env", func(t *testing.T) {
-		cfg := setupLogger(t, test.Env(map[string]string{
-			"LOG_LEVEL":  "LEVEL",
-			"LOG_FORMAT": "FORMAT",
-		}))
+		t.Setenv("LOG_LEVEL", "LEVEL")
+		t.Setenv("LOG_FORMAT", "FORMAT")
+		cfg := setupLogger(t)
 
 		if cfg.Level() != "level" || cfg.Format() != "format" {
 			t.Error("incorrect logging config for a full environment")
@@ -41,9 +38,8 @@ func TestLog(t *testing.T) {
 	})
 
 	t.Run("Partial Env", func(t *testing.T) {
-		cfg := setupLogger(t, test.Env(map[string]string{
-			"LOG_LEVEL": "level",
-		}))
+		t.Setenv("LOG_LEVEL", "level")
+		cfg := setupLogger(t)
 
 		if cfg.Level() != "level" || cfg.Format() != "" {
 			t.Error("incorrect logging config for a partial environment")
@@ -51,10 +47,9 @@ func TestLog(t *testing.T) {
 	})
 
 	t.Run("WithPrefix", func(t *testing.T) {
-		cfg := setupLogger(t, test.Env(map[string]string{
-			"PREFIX_LOG_LEVEL":  "level",
-			"PREFIX_LOG_FORMAT": "format",
-		}), WithPrefix("prefix"))
+		t.Setenv("PREFIX_LOG_LEVEL", "level")
+		t.Setenv("PREFIX_LOG_FORMAT", "format")
+		cfg := setupLogger(t, WithPrefix("prefix"))
 
 		if cfg.Level() != "level" || cfg.Format() != "format" {
 			t.Error("incorrect logging config for a full environment")
@@ -62,9 +57,8 @@ func TestLog(t *testing.T) {
 	})
 }
 
-func setupLogger(t *testing.T, e test.Env, opts ...Option) Logger {
+func setupLogger(t *testing.T, opts ...Option) Logger {
 	t.Helper()
-	e.Set(t)
 
 	cfg, err := NewLogger(opts...)
 	if err != nil {
