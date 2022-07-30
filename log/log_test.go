@@ -1,4 +1,18 @@
-package log
+// Copyright 2021-2022 arcadium.dev <info@arcadium.dev>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package log_test
 
 import (
 	"context"
@@ -6,218 +20,115 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"arcadium.dev/core/log"
 )
-
-func TestWithLevel(t *testing.T) {
-	levelCheck := func(t *testing.T, lvl Level) {
-		t.Helper()
-		var opts options
-		o := WithLevel(lvl)
-		if o == nil {
-			t.Fatal("option expected")
-		}
-		o.apply(&opts)
-		if opts.level != lvl {
-			t.Errorf("Expected: %d actual: %d", lvl, opts.level)
-		}
-	}
-
-	t.Run("LevelDebug", func(t *testing.T) {
-		levelCheck(t, LevelDebug)
-	})
-
-	t.Run("LevelInfo", func(t *testing.T) {
-		levelCheck(t, LevelDebug)
-	})
-
-	t.Run("LevelWarn", func(t *testing.T) {
-		levelCheck(t, LevelDebug)
-	})
-
-	t.Run("LevelError", func(t *testing.T) {
-		levelCheck(t, LevelDebug)
-	})
-}
-
-func TestWithFormat(t *testing.T) {
-	formatCheck := func(t *testing.T, f Format) {
-		t.Helper()
-		var opts options
-		o := WithFormat(f)
-		if o == nil {
-			t.Fatal("option expected")
-		}
-		o.apply(&opts)
-		if opts.format != f {
-			t.Errorf("Expected: %d actual: %d", f, opts.format)
-		}
-	}
-
-	t.Run("FormatJSON", func(t *testing.T) {
-		formatCheck(t, FormatJSON)
-	})
-
-	t.Run("FormatLogfmt", func(t *testing.T) {
-		formatCheck(t, FormatJSON)
-	})
-
-	t.Run("FormatNop", func(t *testing.T) {
-		formatCheck(t, FormatJSON)
-	})
-}
-
-func TestWithOutput(t *testing.T) {
-	var (
-		opts options
-		b    = NewStringBuffer()
-	)
-	o := WithOutput(b)
-	if o == nil {
-		t.Fatal("option expected")
-	}
-	o.apply(&opts)
-	if opts.writer != b {
-		t.Errorf("Expected: %+v actual: %+v", b, opts.writer)
-	}
-}
-
-func TestWithoutTimestamp(t *testing.T) {
-	var opts options
-
-	o := WithoutTimestamp()
-	if o == nil {
-		t.Fatal("option expected")
-	}
-	o.apply(&opts)
-	if opts.timestamped != false {
-		t.Error("Expected timestamped to be false")
-	}
-}
-
-func TestAsDefault(t *testing.T) {
-	var opts options
-
-	o := AsDefault()
-	if o == nil {
-		t.Fatal("option expected")
-	}
-	o.apply(&opts)
-	if !opts.asDefault {
-		t.Error("Expected asDefault to be true")
-	}
-}
 
 func TestNew(t *testing.T) {
 	t.Run("Test invalid level option", func(t *testing.T) {
-		_, err := New(WithLevel(Level(42)))
+		_, err := log.New(log.WithLevel(log.Level(42)))
 		if err == nil {
 			t.Errorf("Expected an error")
 		}
-		if !errors.Is(err, ErrInvalidLevel) {
-			t.Errorf("\nExpected: %s\nActual:   %s", ErrInvalidLevel, err)
+		if !errors.Is(err, log.ErrInvalidLevel) {
+			t.Errorf("\nExpected: %s\nActual:   %s", log.ErrInvalidLevel, err)
 		}
 	})
 
 	t.Run("Test invalid format option", func(t *testing.T) {
-		_, err := New(WithFormat(Format(42)))
+		_, err := log.New(log.WithFormat(log.Format(42)))
 		if err == nil {
 			t.Errorf("Expected an error")
 		}
-		if !errors.Is(err, ErrInvalidFormat) {
-			t.Errorf("\nExpected: %s\nActual:   %s", ErrInvalidFormat, err)
+		if !errors.Is(err, log.ErrInvalidFormat) {
+			t.Errorf("\nExpected: %s\nActual:   %s", log.ErrInvalidFormat, err)
 		}
 	})
 	t.Run("Test invalid output option", func(t *testing.T) {
-		_, err := New(WithOutput(nil))
+		_, err := log.New(log.WithOutput(nil))
 		if err == nil {
 			t.Errorf("Expected an error")
 		}
-		if !errors.Is(err, ErrInvalidOutput) {
-			t.Errorf("\nExpected: %s\nActual:   %s", ErrInvalidOutput, err)
+		if !errors.Is(err, log.ErrInvalidOutput) {
+			t.Errorf("\nExpected: %s\nActual:   %s", log.ErrInvalidOutput, err)
 		}
 	})
 
 	t.Run("Test valid level option", func(t *testing.T) {
-		l, err := New(WithLevel(LevelError))
+		l, err := log.New(log.WithLevel(log.LevelError))
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if l.logger == nil {
-			t.Error("Expected a logger")
+		if log.LevelError != l.Level() {
+			t.Errorf("Expected level: %d\nActual level:   %d", log.LevelError, l.Level())
 		}
 	})
 
 	t.Run("Test valid format option", func(t *testing.T) {
-		l, err := New(WithFormat(FormatNop))
+		_, err := log.New(log.WithFormat(log.FormatNop))
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
-		}
-		if l.logger == nil {
-			t.Error("Expected a logger")
 		}
 	})
 
 	t.Run("Test valid output option", func(t *testing.T) {
-		l, err := New(WithOutput(NewStringBuffer()))
+		_, err := log.New(log.WithOutput(log.NewStringBuffer()))
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
-		}
-		if l.logger == nil {
-			t.Error("Expected a logger")
 		}
 	})
 
 	t.Run("Test as default option", func(t *testing.T) {
-		l, err := New(AsDefault())
+		l, err := log.New(log.AsDefault())
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if DefaultLogger != l {
+		if log.DefaultLogger != l {
 			t.Errorf("Expected DefaultLogger to be the same as the new logger")
 		}
 	})
 
 	t.Run("Test all options", func(t *testing.T) {
-		l, err := New(
-			WithLevel(LevelWarn),
-			WithFormat(FormatLogfmt),
-			WithOutput(os.Stdout),
-			AsDefault(),
+		l, err := log.New(
+			log.WithLevel(log.LevelWarn),
+			log.WithFormat(log.FormatLogfmt),
+			log.WithOutput(os.Stdout),
+			log.AsDefault(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if l.logger == nil {
-			t.Error("Expected a logger")
-		}
-		if DefaultLogger != l {
+		if log.DefaultLogger != l {
 			t.Errorf("Expected DefaultLogger to be the same as the new logger")
 		}
 	})
 
 	t.Run("Test defaults ", func(t *testing.T) {
-		DefaultLogger, err := New()
+		l, err := log.New()
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
 
-		if DefaultLogger.level != LevelInfo {
-			t.Errorf("Expect %d: Actual %d", LevelInfo, DefaultLogger.level)
+		if log.LevelInfo != l.Level() {
+			t.Errorf("Expect level: %d\nActual level:   %d", log.LevelInfo, l.Level())
 		}
 	})
 }
 
 func TestDebug(t *testing.T) {
 	t.Run("Level set to debug", func(t *testing.T) {
-		b := NewStringBuffer()
-		l, err := New(
-			WithLevel(LevelDebug),
-			WithFormat(FormatLogfmt),
-			WithOutput(b),
-			WithoutTimestamp(),
+		b := log.NewStringBuffer()
+		l, err := log.New(
+			log.WithLevel(log.LevelDebug),
+			log.WithFormat(log.FormatLogfmt),
+			log.WithOutput(b),
+			log.WithoutTimestamp(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
+		}
+		if log.LevelDebug != l.Level() {
+			t.Errorf("Expect level: %d\nActual level:   %d", log.LevelDebug, l.Level())
 		}
 
 		l.Debug("a", "b")
@@ -237,14 +148,17 @@ func TestDebug(t *testing.T) {
 	})
 
 	t.Run("Level set above debug", func(t *testing.T) {
-		b := NewStringBuffer()
-		l, err := New(
-			WithLevel(LevelInfo),
-			WithFormat(FormatLogfmt),
-			WithOutput(b),
+		b := log.NewStringBuffer()
+		l, err := log.New(
+			log.WithLevel(log.LevelInfo),
+			log.WithFormat(log.FormatLogfmt),
+			log.WithOutput(b),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
+		}
+		if log.LevelInfo != l.Level() {
+			t.Errorf("Expect level: %d\nActual level:   %d", log.LevelInfo, l.Level())
 		}
 
 		l.Debug("a", "b")
@@ -255,22 +169,25 @@ func TestDebug(t *testing.T) {
 	})
 
 	t.Run("Test global debug", func(t *testing.T) {
-		b := NewStringBuffer()
-		l, err := New(
-			WithLevel(LevelDebug),
-			WithOutput(b),
-			WithoutTimestamp(),
-			AsDefault(),
+		b := log.NewStringBuffer()
+		l, err := log.New(
+			log.WithLevel(log.LevelDebug),
+			log.WithOutput(b),
+			log.WithoutTimestamp(),
+			log.AsDefault(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if DefaultLogger != l {
+		if log.LevelDebug != l.Level() {
+			t.Errorf("Expect level: %d\nActual level:   %d", log.LevelDebug, l.Level())
+		}
+		if log.DefaultLogger != l {
 			t.Errorf("Expected default logger to be set")
 		}
 
-		Debug("a", "b")
-		Debug("c", "d")
+		log.Debug("a", "b")
+		log.Debug("c", "d")
 
 		if b.Len() != 2 {
 			t.Errorf("Unexpected buffer length: %d", b.Len())
@@ -288,15 +205,18 @@ func TestDebug(t *testing.T) {
 
 func TestInfo(t *testing.T) {
 	t.Run("Level set to info", func(t *testing.T) {
-		b := NewStringBuffer()
-		l, err := New(
-			WithLevel(LevelInfo),
-			WithFormat(FormatJSON),
-			WithOutput(b),
-			WithoutTimestamp(),
+		b := log.NewStringBuffer()
+		l, err := log.New(
+			log.WithLevel(log.LevelInfo),
+			log.WithFormat(log.FormatJSON),
+			log.WithOutput(b),
+			log.WithoutTimestamp(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
+		}
+		if log.LevelInfo != l.Level() {
+			t.Errorf("Expected level: %d\nActual level:   %d", log.LevelInfo, l.Level())
 		}
 
 		l.Info("a", "b")
@@ -316,15 +236,18 @@ func TestInfo(t *testing.T) {
 	})
 
 	t.Run("Level set above info", func(t *testing.T) {
-		b := NewStringBuffer()
-		l, err := New(
-			WithLevel(LevelWarn),
-			WithFormat(FormatJSON),
-			WithOutput(b),
-			WithoutTimestamp(),
+		b := log.NewStringBuffer()
+		l, err := log.New(
+			log.WithLevel(log.LevelWarn),
+			log.WithFormat(log.FormatJSON),
+			log.WithOutput(b),
+			log.WithoutTimestamp(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
+		}
+		if log.LevelWarn != l.Level() {
+			t.Errorf("Expected level: %d\nActual level:   %d", log.LevelWarn, l.Level())
 		}
 
 		l.Info("a", "b")
@@ -335,22 +258,25 @@ func TestInfo(t *testing.T) {
 	})
 
 	t.Run("Test global info", func(t *testing.T) {
-		b := NewStringBuffer()
-		l, err := New(
-			WithLevel(LevelInfo),
-			WithOutput(b),
-			WithoutTimestamp(),
-			AsDefault(),
+		b := log.NewStringBuffer()
+		l, err := log.New(
+			log.WithLevel(log.LevelInfo),
+			log.WithOutput(b),
+			log.WithoutTimestamp(),
+			log.AsDefault(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if DefaultLogger != l {
+		if log.LevelInfo != l.Level() {
+			t.Errorf("Expected level: %d\nActual level:   %d", log.LevelInfo, l.Level())
+		}
+		if log.DefaultLogger != l {
 			t.Errorf("Expected default logger to be set")
 		}
 
-		Info("a", "b")
-		Info("c", "d")
+		log.Info("a", "b")
+		log.Info("c", "d")
 
 		if b.Len() != 2 {
 			t.Errorf("Unexpected buffer length: %d", b.Len())
@@ -368,15 +294,18 @@ func TestInfo(t *testing.T) {
 
 func TestWarn(t *testing.T) {
 	t.Run("Level set to warn", func(t *testing.T) {
-		b := NewStringBuffer()
-		l, err := New(
-			WithLevel(LevelWarn),
-			WithFormat(FormatLogfmt),
-			WithOutput(b),
-			WithoutTimestamp(),
+		b := log.NewStringBuffer()
+		l, err := log.New(
+			log.WithLevel(log.LevelWarn),
+			log.WithFormat(log.FormatLogfmt),
+			log.WithOutput(b),
+			log.WithoutTimestamp(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
+		}
+		if log.LevelWarn != l.Level() {
+			t.Errorf("Expected level: %d\nActual level:   %d", log.LevelWarn, l.Level())
 		}
 
 		l.Warn("a", "b")
@@ -396,14 +325,17 @@ func TestWarn(t *testing.T) {
 	})
 
 	t.Run("Level set above warn", func(t *testing.T) {
-		b := NewStringBuffer()
-		l, err := New(
-			WithLevel(LevelError),
-			WithFormat(FormatLogfmt),
-			WithOutput(b),
+		b := log.NewStringBuffer()
+		l, err := log.New(
+			log.WithLevel(log.LevelError),
+			log.WithFormat(log.FormatLogfmt),
+			log.WithOutput(b),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
+		}
+		if log.LevelError != l.Level() {
+			t.Errorf("Expected level: %d\nActual level:   %d", log.LevelError, l.Level())
 		}
 
 		l.Warn("a", "b")
@@ -414,22 +346,25 @@ func TestWarn(t *testing.T) {
 	})
 
 	t.Run("Test global warn", func(t *testing.T) {
-		b := NewStringBuffer()
-		l, err := New(
-			WithLevel(LevelWarn),
-			WithOutput(b),
-			WithoutTimestamp(),
-			AsDefault(),
+		b := log.NewStringBuffer()
+		l, err := log.New(
+			log.WithLevel(log.LevelWarn),
+			log.WithOutput(b),
+			log.WithoutTimestamp(),
+			log.AsDefault(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if DefaultLogger != l {
+		if log.LevelWarn != l.Level() {
+			t.Errorf("Expected level: %d\nActual level:   %d", log.LevelWarn, l.Level())
+		}
+		if log.DefaultLogger != l {
 			t.Errorf("Expected default logger to be set")
 		}
 
-		Warn("a", "b")
-		Warn("c", "d")
+		log.Warn("a", "b")
+		log.Warn("c", "d")
 
 		if b.Len() != 2 {
 			t.Errorf("Unexpected buffer length: %d", b.Len())
@@ -447,15 +382,18 @@ func TestWarn(t *testing.T) {
 
 func TestError(t *testing.T) {
 	t.Run("Level set to error", func(t *testing.T) {
-		b := NewStringBuffer()
-		l, err := New(
-			WithLevel(LevelError),
-			WithFormat(FormatJSON),
-			WithOutput(b),
-			WithoutTimestamp(),
+		b := log.NewStringBuffer()
+		l, err := log.New(
+			log.WithLevel(log.LevelError),
+			log.WithFormat(log.FormatJSON),
+			log.WithOutput(b),
+			log.WithoutTimestamp(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
+		}
+		if log.LevelError != l.Level() {
+			t.Errorf("Expected level: %d\nActual level:   %d", log.LevelError, l.Level())
 		}
 
 		l.Error("a", "b")
@@ -475,22 +413,25 @@ func TestError(t *testing.T) {
 	})
 
 	t.Run("Test global error", func(t *testing.T) {
-		b := NewStringBuffer()
-		l, err := New(
-			WithLevel(LevelError),
-			WithOutput(b),
-			WithoutTimestamp(),
-			AsDefault(),
+		b := log.NewStringBuffer()
+		l, err := log.New(
+			log.WithLevel(log.LevelError),
+			log.WithOutput(b),
+			log.WithoutTimestamp(),
+			log.AsDefault(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 		}
-		if DefaultLogger != l {
+		if log.LevelError != l.Level() {
+			t.Errorf("Expected level: %d\nActual level:   %d", log.LevelError, l.Level())
+		}
+		if log.DefaultLogger != l {
 			t.Errorf("Expected default logger to be set")
 		}
 
-		Error("a", "b")
-		Error("c", "d")
+		log.Error("a", "b")
+		log.Error("c", "d")
 
 		if b.Len() != 2 {
 			t.Errorf("Unexpected buffer length: %d", b.Len())
@@ -507,11 +448,11 @@ func TestError(t *testing.T) {
 }
 
 func TestLogging(t *testing.T) {
-	b := NewStringBuffer()
-	l, err := New(
-		WithLevel(LevelDebug),
-		WithOutput(b),
-		WithoutTimestamp(),
+	b := log.NewStringBuffer()
+	l, err := log.New(
+		log.WithLevel(log.LevelDebug),
+		log.WithOutput(b),
+		log.WithoutTimestamp(),
 	)
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
@@ -544,11 +485,11 @@ func TestLogging(t *testing.T) {
 }
 
 func TestWith(t *testing.T) {
-	b := NewStringBuffer()
-	l, err := New(
-		WithFormat(FormatLogfmt),
-		WithOutput(b),
-		WithoutTimestamp(),
+	b := log.NewStringBuffer()
+	l, err := log.New(
+		log.WithFormat(log.FormatLogfmt),
+		log.WithOutput(b),
+		log.WithoutTimestamp(),
 	)
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
@@ -570,21 +511,21 @@ func TestWith(t *testing.T) {
 func TestToLevel(t *testing.T) {
 	levels := []struct {
 		s string
-		l Level
+		l log.Level
 	}{
-		{s: "", l: LevelInfo},
-		{s: "info", l: LevelInfo},
-		{s: "debug", l: LevelDebug},
-		{s: "DEBUG", l: LevelDebug},
-		{s: "INFO", l: LevelInfo},
-		{s: "warn", l: LevelWarn},
-		{s: "WARN", l: LevelWarn},
-		{s: "error", l: LevelError},
-		{s: "ERROR", l: LevelError},
-		{s: "invalid", l: LevelInvalid},
+		{s: "", l: log.LevelInfo},
+		{s: "info", l: log.LevelInfo},
+		{s: "debug", l: log.LevelDebug},
+		{s: "DEBUG", l: log.LevelDebug},
+		{s: "INFO", l: log.LevelInfo},
+		{s: "warn", l: log.LevelWarn},
+		{s: "WARN", l: log.LevelWarn},
+		{s: "error", l: log.LevelError},
+		{s: "ERROR", l: log.LevelError},
+		{s: "invalid", l: log.LevelInvalid},
 	}
 	for _, l := range levels {
-		if ToLevel(l.s) != l.l {
+		if log.ToLevel(l.s) != l.l {
 			t.Errorf("Unexpected level: %s, for %d", l.s, l.l)
 		}
 	}
@@ -593,19 +534,19 @@ func TestToLevel(t *testing.T) {
 func TestToFormat(t *testing.T) {
 	formats := []struct {
 		s string
-		f Format
+		f log.Format
 	}{
-		{s: "", f: FormatLogfmt},
-		{s: "json", f: FormatJSON},
-		{s: "JSON", f: FormatJSON},
-		{s: "logfmt", f: FormatLogfmt},
-		{s: "LOGFMT", f: FormatLogfmt},
-		{s: "nop", f: FormatNop},
-		{s: "NOP", f: FormatNop},
-		{s: "invalid", f: FormatInvalid},
+		{s: "", f: log.FormatLogfmt},
+		{s: "json", f: log.FormatJSON},
+		{s: "JSON", f: log.FormatJSON},
+		{s: "logfmt", f: log.FormatLogfmt},
+		{s: "LOGFMT", f: log.FormatLogfmt},
+		{s: "nop", f: log.FormatNop},
+		{s: "NOP", f: log.FormatNop},
+		{s: "invalid", f: log.FormatInvalid},
 	}
 	for _, f := range formats {
-		if ToFormat(f.s) != f.f {
+		if log.ToFormat(f.s) != f.f {
 			t.Errorf("Unexpected level: %s, for %d", f.s, f.f)
 		}
 	}
@@ -613,11 +554,11 @@ func TestToFormat(t *testing.T) {
 
 func TestLoggerContext(t *testing.T) {
 	t.Run("insert, extract success", func(t *testing.T) {
-		b := NewStringBuffer()
-		l, err := New(
-			WithFormat(FormatLogfmt),
-			WithOutput(b),
-			WithoutTimestamp(),
+		b := log.NewStringBuffer()
+		l, err := log.New(
+			log.WithFormat(log.FormatLogfmt),
+			log.WithOutput(b),
+			log.WithoutTimestamp(),
 		)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
@@ -626,8 +567,8 @@ func TestLoggerContext(t *testing.T) {
 
 		ctx := context.Background()
 
-		ctx = NewContextWithLogger(ctx, l)
-		nl := LoggerFromContext(ctx)
+		ctx = log.NewContextWithLogger(ctx, l)
+		nl := log.LoggerFromContext(ctx)
 
 		if l != nl {
 			t.Errorf("Unexpected logger from context")

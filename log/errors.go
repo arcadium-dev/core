@@ -12,32 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config_test
+package log // import "arcadium.dev/core/log
 
-import (
-	"testing"
+import "errors"
 
-	"arcadium.dev/core/config"
+var (
+	// ErrInvalidLevel will be returned when the level given to the WirhLevel
+	// option is invalid.
+	ErrInvalidLevel = errors.New("invalid level")
+
+	// ErrInvalidFormat will be returned when the format given to the WithFormat
+	// options is invalid.
+	ErrInvalidFormat = errors.New("invalid format")
+
+	// ErrInvalidOutput will be returned when the output writer given to WithOuput
+	// is nil.
+	ErrInvalidOutput = errors.New("invalid output")
 )
-
-func TestOptionsWithPrefix(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Test WithPrefix - empty prefix", func(t *testing.T) {
-		opts := &config.Options{}
-
-		config.WithPrefix("").Apply(opts)
-		if opts.Prefix != "" {
-			t.Error("prefix should be empty")
-		}
-	})
-
-	t.Run("Test WithPrefix - non-empty prefix", func(t *testing.T) {
-		opts := &config.Options{}
-
-		config.WithPrefix("prefix").Apply(opts)
-		if opts.Prefix != "prefix_" {
-			t.Errorf("incorrect prefix: %s", opts.Prefix)
-		}
-	})
-}

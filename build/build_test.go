@@ -12,18 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package build
+package build_test
 
 import (
 	"testing"
-)
 
-func setup(t *testing.T) Information {
-	t.Helper()
-	info := Info("Testing", "Version", "Branch", "Commit", "Date")
-	info.Go = "Go"
-	return info
-}
+	"arcadium.dev/core/build"
+)
 
 func TestFields(t *testing.T) {
 	t.Parallel()
@@ -52,4 +47,11 @@ func TestString(t *testing.T) {
 	if actual != expected {
 		t.Errorf("\nExpected: %s,\nActual:   %s", expected, actual)
 	}
+}
+
+func setup(t *testing.T) build.Information {
+	t.Helper()
+	info := build.Info("Testing", "Version", "Branch", "Commit", "Date")
+	info.Go = "Go"
+	return info
 }

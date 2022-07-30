@@ -16,56 +16,52 @@ package config // import "arcadium.dev/core/config
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/kelseyhightower/envconfig"
 )
 
 type (
-	// SQL holds the configuration settings needed to connect to an sql database.
-	SQL struct {
+	// DB holds the configuration settings needed to connect to a database.
+	DB struct {
 		driver string
-		url    string
+		dsn    string
 	}
 )
 
 const (
-	sqlPrefix = "sql"
+	dbPrefix = "db"
 )
 
-// NewSQL returns the sql configuration.
-func NewSQL(opts ...Option) (SQL, error) {
+// NewDB returns the db configuration.
+func NewDB(opts ...Option) (DB, error) {
 	o := &Options{}
 	for _, opt := range opts {
 		opt.Apply(o)
 	}
-	prefix := o.Prefix + sqlPrefix
+	prefix := o.Prefix + dbPrefix
 
 	config := struct {
-		Driver string `default:"pgx"`
-		URL    string `required:"true"`
+		Driver string `required:"true"`
+		DSN    string `required:"true"`
 	}{}
 	if err := envconfig.Process(prefix, &config); err != nil {
-		return SQL{}, fmt.Errorf("failed to load %s configuration: %w", prefix, err)
+		return DB{}, fmt.Errorf("failed to load %s configuration: %w", prefix, err)
 	}
-	if _, err := url.Parse(config.URL); err != nil {
-		return SQL{}, fmt.Errorf("failed to parse %s connection url: %w", prefix, err)
-	}
-	return SQL{
+	return DB{
 		driver: strings.TrimSpace(config.Driver),
-		url:    strings.TrimSpace(config.URL),
+		dsn:    strings.TrimSpace(config.DSN),
 	}, nil
 }
 
-// Driver returns the sql database driver. The value is set from the
-// <PREFIX_>SQL_DRIVER environment variable.
-func (s SQL) Driver() string {
-	return s.driver
+// Driver returns the database driver. The value is set from the
+// <PREFIX_>DB_DRIVER environment variable.
+func (db DB) Driver() string {
+	return db.driver
 }
 
-// URL returns the connection URL for the SQL database. The value is set from
-// the <PREFIX_>SQL_URL environment variable.
-func (s SQL) URL() string {
-	return s.url
+// DSN returns the datasource name for the database. The value is set from
+// the <PREFIX_>DB_DSN environment variable.
+func (db DB) DSN() string {
+	return db.dsn
 }

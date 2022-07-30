@@ -88,7 +88,7 @@ func (t TLS) CACert() string {
 func (t TLS) TLSConfig(opts ...TLSOption) (*tls.Config, error) {
 	cfg := &tls.Config{}
 	for _, opt := range opts {
-		opt.apply(cfg)
+		opt.Apply(cfg)
 	}
 
 	// Load the tls certificate.
@@ -119,7 +119,7 @@ func (t TLS) TLSConfig(opts ...TLSOption) (*tls.Config, error) {
 type (
 	// TLSOption provides options for configuring the creation of a tls.Config.
 	TLSOption interface {
-		apply(*tls.Config)
+		Apply(*tls.Config)
 	}
 )
 
@@ -140,6 +140,6 @@ func newTLSOption(f func(*tls.Config)) tlsOption {
 	return tlsOption{f: f}
 }
 
-func (o tlsOption) apply(cfg *tls.Config) {
+func (o tlsOption) Apply(cfg *tls.Config) {
 	o.f(cfg)
 }
