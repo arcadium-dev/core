@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package config_test
 
 import (
 	"testing"
+
+	"arcadium.dev/core/config"
 )
 
 func TestServer(t *testing.T) {
@@ -30,7 +32,7 @@ func TestServer(t *testing.T) {
 
 	t.Run("with prefix", func(t *testing.T) {
 		t.Setenv("FANCY_SERVER_ADDR", "test_addr:42")
-		cfg := setupServer(t, WithPrefix("fancy"))
+		cfg := setupServer(t, config.WithPrefix("fancy"))
 
 		if cfg.Addr() != "test_addr:42" {
 			t.Error("incorrect server config")
@@ -38,10 +40,10 @@ func TestServer(t *testing.T) {
 	})
 }
 
-func setupServer(t *testing.T, opts ...Option) Server {
+func setupServer(t *testing.T, opts ...config.Option) config.Server {
 	t.Helper()
 
-	cfg, err := NewServer(opts...)
+	cfg, err := config.NewServer(opts...)
 	if err != nil {
 		t.Errorf("error occurred: %s", err)
 	}

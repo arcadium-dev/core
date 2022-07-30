@@ -16,9 +16,7 @@ package log // import "arcadium.dev/core/log
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -39,11 +37,6 @@ type (
 	Logger struct {
 		level  Level
 		logger log.Logger
-	}
-
-	// Option provides for Logger configuration.
-	Option interface {
-		apply(*options)
 	}
 
 	// Level defines the logging levels available to the Logger, with a level of
@@ -87,20 +80,6 @@ const (
 	FormatInvalid
 )
 
-var (
-	// ErrInvalidLevel will be returned when the level given to the WirhLevel
-	// option is invalid.
-	ErrInvalidLevel = errors.New("invalid level")
-
-	// ErrInvalidFormat will be returned when the format given to the WithFormat
-	// options is invalid.
-	ErrInvalidFormat = errors.New("invalid format")
-
-	// ErrInvalidOutput will be returned when the output writer given to WithOuput
-	// is nil.
-	ErrInvalidOutput = errors.New("invalid output")
-)
-
 // New returns a Logger.
 func New(opts ...Option) (Logger, error) {
 	o := options{
@@ -141,44 +120,6 @@ func New(opts ...Option) (Logger, error) {
 	}
 
 	return l, nil
-}
-
-// WithLevel allows the level to be configured. The default level is LevelInfo.
-func WithLevel(level Level) Option {
-	return newOption(func(opts *options) {
-		opts.level = level
-	})
-}
-
-// WithFormat allows the format to be configured. The default format is
-// FormatLogfmt.
-func WithFormat(format Format) Option {
-	return newOption(func(opts *options) {
-		opts.format = format
-	})
-}
-
-// WithOutput allows the format to be configured. The default writer is
-// os.Stdout.
-func WithOutput(writer io.Writer) Option {
-	return newOption(func(opts *options) {
-		opts.writer = writer
-	})
-}
-
-// WithoutTimestamp disables the use of a timestamp for logs.
-// Useful for unit tests.
-func WithoutTimestamp() Option {
-	return newOption(func(opts *options) {
-		opts.timestamped = false
-	})
-}
-
-// As default sets the DefaultLogger.
-func AsDefault() Option {
-	return newOption(func(opts *options) {
-		opts.asDefault = true
-	})
 }
 
 // Debug logs a debug level message.
@@ -228,6 +169,11 @@ func (l Logger) Error(kv ...interface{}) {
 // Error logs an error level message to the default logger.
 func Error(kv ...interface{}) {
 	DefaultLogger.Error(kv...)
+}
+
+// Level returns the log level.
+func (l Logger) Level() Level {
+	return l.level
 }
 
 // With returns a new contextual logger with keyvals prepended to those
@@ -285,36 +231,4 @@ func LoggerFromContext(ctx context.Context) Logger {
 		logger, _ = New(WithFormat(FormatNop))
 	}
 	return logger
-}
-
-type (
-	options struct {
-		level       Level
-		format      Format
-		writer      io.Writer
-		timestamped bool
-		asDefault   bool
-	}
-
-	option struct {
-		f func(*options)
-	}
-
-	contextKey int
-)
-
-const (
-	loggerContextKey = contextKey(iota + 1)
-)
-
-var (
-	timestamped = true // Setting to false disables timestamps for unit testing.
-)
-
-func newOption(f func(*options)) *option {
-	return &option{f: f}
-}
-
-func (o *option) apply(opts *options) {
-	o.f(opts)
 }

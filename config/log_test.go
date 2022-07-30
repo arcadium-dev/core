@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package config_test
 
 import (
 	"testing"
+
+	"arcadium.dev/core/config"
 )
 
 func TestLog(t *testing.T) {
@@ -49,7 +51,7 @@ func TestLog(t *testing.T) {
 	t.Run("WithPrefix", func(t *testing.T) {
 		t.Setenv("PREFIX_LOG_LEVEL", "level")
 		t.Setenv("PREFIX_LOG_FORMAT", "format")
-		cfg := setupLogger(t, WithPrefix("prefix"))
+		cfg := setupLogger(t, config.WithPrefix("prefix"))
 
 		if cfg.Level() != "level" || cfg.Format() != "format" {
 			t.Error("incorrect logging config for a full environment")
@@ -57,10 +59,10 @@ func TestLog(t *testing.T) {
 	})
 }
 
-func setupLogger(t *testing.T, opts ...Option) Logger {
+func setupLogger(t *testing.T, opts ...config.Option) config.Logger {
 	t.Helper()
 
-	cfg, err := NewLogger(opts...)
+	cfg, err := config.NewLogger(opts...)
 	if err != nil {
 		t.Fatalf("error occurred: %s", err)
 	}
