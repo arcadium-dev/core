@@ -1,5 +1,5 @@
 ### Issue
-#XXX: Summary goes here
+Fixes #XXX: Summary goes here
 
 ### What
 Use an active voice.
