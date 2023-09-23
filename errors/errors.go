@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package errors provides a set of tools for creating errors.
+// Package errors provides a set of tools for indicating errors.
 package errors // import "arcadium.dev/core/errors"
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 )
@@ -48,7 +47,7 @@ type (
 func (e HTTPError) Status() int { return e.status }
 
 // Error returns the error message.
-func (e HTTPError) Error() string { return fmt.Sprintf("%s (Status: %d)", e.msg, e.status) }
+func (e HTTPError) Error() string { return e.msg }
 
 var (
 	// ErrBadRequest indicates an error due to client error.

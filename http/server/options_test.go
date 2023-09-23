@@ -1,0 +1,58 @@
+package server
+
+import (
+	"crypto/tls"
+	"net/http"
+	"testing"
+	"time"
+
+	"github.com/rs/cors"
+
+	"arcadium.dev/core/assert"
+	"arcadium.dev/core/log"
+)
+
+func TestWithAddr(t *testing.T) {
+	addr := "example.com:4201"
+	s := &Server{}
+	WithAddr(addr).apply(s)
+
+	assert.Equal(t, s.addr, addr)
+}
+
+func TestWithTLS(t *testing.T) {
+	s := &Server{
+		server: &http.Server{},
+	}
+	cfg := &tls.Config{}
+	WithTLS(cfg).apply(s)
+
+	assert.NotNil(t, s.server.TLSConfig)
+}
+
+func TestWithCORS(t *testing.T) {
+	corsOpts := &cors.Options{}
+	s := &Server{}
+	WithCORS(corsOpts).apply(s)
+
+	assert.NotNil(t, s.corsOptions)
+}
+
+func TestWithShutdownTimeout(t *testing.T) {
+	s := &Server{}
+	timeout := 52 * time.Second
+	WithShutdownTimeout(timeout).apply(s)
+
+	assert.Equal(t, s.shutdownTimeout, timeout)
+}
+
+func TestWithLogger(t *testing.T) {
+	s := &Server{}
+
+	logger, err := log.New()
+	assert.Nil(t, err)
+
+	WithLogger(logger).apply(s)
+
+	assert.Equal(t, s.logger, logger)
+}
