@@ -2,15 +2,6 @@
 
 ## Deployment
 
-#### DSN
-DSN defines the Data Source Name, the mysql connection string. This is
-required.
-
-To connect to the gracenote database (it's in gcp-ent) from your local machine, use:
-```
-DSN="root:${GRACENOTE_MYSQL_PASSWORD}@tcp(104.154.133.13:3306)/gracenote_core"
-```
-
 #### LOG_LEVEL
 LOG_LEVEL defines the level of logging. Valid levels are `debug`, `warn`, `info`, and
 `error`.

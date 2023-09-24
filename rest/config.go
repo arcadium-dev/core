@@ -24,7 +24,6 @@ import (
 type (
 	// Config holds the configuration information for the restful api server.
 	Config struct {
-		dsn            string
 		logLevel       string
 		tlsCert        string
 		tlsKey         string
@@ -45,7 +44,6 @@ const (
 // NewConfig returns the configuration of restful api server.
 func NewConfig() (Config, error) {
 	cfg := struct {
-		Dsn            string `required:"true"`
 		LogLevel       string `split_words:"true"`
 		TlsCert        string `split_words:"true"`
 		TlsKey         string `split_words:"true"`
@@ -64,7 +62,6 @@ func NewConfig() (Config, error) {
 	}
 
 	c := Config{
-		dsn:          strings.TrimSpace(cfg.Dsn),
 		logLevel:     strings.TrimSpace(strings.ToLower(cfg.LogLevel)),
 		tlsCert:      strings.TrimSpace(cfg.TlsCert),
 		tlsKey:       strings.TrimSpace(cfg.TlsKey),
@@ -95,9 +92,6 @@ func NewConfig() (Config, error) {
 
 	return c, nil
 }
-
-// DSN returns the database connection string.
-func (c Config) DSN() string { return c.dsn }
 
 // LogLevel returns the logging level. The default level is "error".
 func (c Config) LogLevel() string { return c.logLevel }
