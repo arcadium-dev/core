@@ -44,7 +44,7 @@ func TestNewConfig(t *testing.T) {
 		expectedTLSKey := "/etc/certs/key.pem"
 		expectedMTLSEnabled := "true"
 		expectedServerAddr := ":443"
-		expectedAllowedOrigins := []string{"https://harverster-dev.cbs.com"}
+		expectedAllowedOrigins := []string{"https://arcade.arcadium.dev"}
 		expectedAllowedMethods := []string{"GET", "OPTIONS"}
 		expectedAllowedHeaders := []string{"content-type", "x-okta-user-agent-extended"}
 		expectedPProfEnabled := "true"

@@ -86,7 +86,7 @@ func setup(t *testing.T) (*rest.Server, *log.StringBuffer) {
 	t.Setenv("TLS_CERT", "")
 	t.Setenv("TLS_KEY", "")
 	t.Setenv("MTLS_ENABLED", "false")
-	t.Setenv("ALLOWED_ORIGINS", "https://*.cbs.com")
+	t.Setenv("ALLOWED_ORIGINS", "https://*.arcadium.dev")
 	t.Setenv("ALLOWED_METHODS", "GET")
 	t.Setenv("ALLOWED_HEADERS", "*")
 
