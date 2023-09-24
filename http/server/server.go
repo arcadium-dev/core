@@ -17,6 +17,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -74,8 +75,8 @@ func (c corsLogger) Printf(f string, v ...any) {
 	c.logger.Debug().Msgf(f, v...)
 }
 
-// NewServer creates an HTTP server with and has not started to accept requests yet.
-func NewServer(ctx context.Context, opts ...Option) *Server {
+// New creates an HTTP server with and has not started to accept requests yet.
+func New(ctx context.Context, opts ...Option) *Server {
 	s := &Server{
 		addr:            defaultAddr,
 		logger:          zerolog.Ctx(ctx),
@@ -110,6 +111,9 @@ func NewServer(ctx context.Context, opts ...Option) *Server {
 	tlsMsg := ""
 	if s.server.TLSConfig != nil {
 		tlsMsg = ", tls: enabled"
+		if s.server.TLSConfig.ClientAuth == tls.RequireAndVerifyClientCert {
+			tlsMsg = ", mtls: enabled"
+		}
 	}
 	s.logger.Info().Msgf("http server created, address '%s'%s", s.addr, tlsMsg)
 

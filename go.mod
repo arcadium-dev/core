@@ -6,6 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/google/go-cmp v0.5.9
 	github.com/gorilla/mux v1.8.0
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/rs/cors v1.10.0
 	github.com/rs/zerolog v1.30.0

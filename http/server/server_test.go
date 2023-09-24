@@ -17,7 +17,7 @@ import (
 
 func TestServerNew(t *testing.T) {
 	t.Run("without options", func(t *testing.T) {
-		s := NewServer(context.Background())
+		s := New(context.Background())
 
 		assert.Equal(t, s.addr, defaultAddr)
 		assert.Equal(t, s.shutdownTimeout, defaultShutdownTimeout)
@@ -25,7 +25,7 @@ func TestServerNew(t *testing.T) {
 
 	t.Run("without tls", func(t *testing.T) {
 		ctx, b := log.SetupTestLogging(t)
-		NewServer(ctx)
+		New(ctx)
 
 		require.Equal(t, b.Len(), 2)
 		assert.Equal(t, b.Index(1), `{"severity":"info","message":"http server created, address ':8443'"}`+"\n")
@@ -35,7 +35,7 @@ func TestServerNew(t *testing.T) {
 		ctx, b := log.SetupTestLogging(t)
 		cfg := setupTLS(t, "./test/insecure_cert.pem", "./test/insecure_key.pem")
 
-		NewServer(ctx, WithTLS(cfg))
+		New(ctx, WithTLS(cfg))
 
 		require.Equal(t, b.Len(), 2)
 		assert.Equal(t, b.Index(1), `{"severity":"info","message":"http server created, address ':8443', tls: enabled"}`+"\n")
@@ -45,7 +45,7 @@ func TestServerNew(t *testing.T) {
 func TestServerRegister(t *testing.T) {
 	ctx, b := log.SetupTestLogging(t)
 	m := &mockService{}
-	s := NewServer(ctx)
+	s := New(ctx)
 
 	s.Register(m)
 
@@ -68,7 +68,7 @@ func TestServerRegister(t *testing.T) {
 
 func TestServerCORS(t *testing.T) {
 	t.Run("preflight abort - origin", func(t *testing.T) {
-		s := NewServer(context.Background(), WithCORS(&cors.Options{
+		s := New(context.Background(), WithCORS(&cors.Options{
 			AllowedOrigins: []string{"https://*.arcadium.dev"},
 			AllowedMethods: []string{"GET"},
 			AllowedHeaders: []string{"X-Requested-With", "Content-Type"},
@@ -96,7 +96,7 @@ func TestServerCORS(t *testing.T) {
 	})
 
 	t.Run("preflight abort - method", func(t *testing.T) {
-		s := NewServer(context.Background(), WithCORS(&cors.Options{
+		s := New(context.Background(), WithCORS(&cors.Options{
 			AllowedOrigins: []string{"https://*.arcadium.dev"},
 			AllowedMethods: []string{"GET"},
 			AllowedHeaders: []string{"X-Requested-With", "Content-Type"},
@@ -124,7 +124,7 @@ func TestServerCORS(t *testing.T) {
 	})
 
 	t.Run("preflight abort - header", func(t *testing.T) {
-		s := NewServer(context.Background(), WithCORS(&cors.Options{
+		s := New(context.Background(), WithCORS(&cors.Options{
 			AllowedOrigins: []string{"https://*.arcadium.dev"},
 			AllowedMethods: []string{"GET"},
 			AllowedHeaders: []string{"X-Requested-With", "Content-Type"},
@@ -153,7 +153,7 @@ func TestServerCORS(t *testing.T) {
 
 	t.Run("success - default cors", func(t *testing.T) {
 		ctx, b := log.SetupTestLogging(t)
-		s := NewServer(ctx)
+		s := New(ctx)
 
 		require.Equal(t, b.Len(), 2)
 		assert.Equal(t, b.Index(0), `{"severity":"info","message":"cors allow all"}`+"\n")
@@ -182,7 +182,7 @@ func TestServerCORS(t *testing.T) {
 
 	t.Run("success - custom cors", func(t *testing.T) {
 		ctx, b := log.SetupTestLogging(t)
-		s := NewServer(ctx, WithCORS(&cors.Options{
+		s := New(ctx, WithCORS(&cors.Options{
 			AllowedOrigins: []string{"https://*.arcadium.dev"},
 			AllowedMethods: []string{"GET"},
 			AllowedHeaders: []string{"X-Requested-With", "Content-Type"},
@@ -218,14 +218,14 @@ func TestServerCORS(t *testing.T) {
 
 func TestServerServe(t *testing.T) {
 	t.Run("listen failure", func(t *testing.T) {
-		s := NewServer(context.Background(), WithAddr(":-42"))
+		s := New(context.Background(), WithAddr(":-42"))
 		err := s.Serve()
 		assert.Contains(t, err.Error(), "failed to listen on address ':-42'")
 	})
 
 	t.Run("serve", func(t *testing.T) {
 		m := &mockService{}
-		s := NewServer(context.Background(), WithAddr(":4242"))
+		s := New(context.Background(), WithAddr(":4242"))
 
 		s.Register(m)
 
@@ -247,7 +247,7 @@ func TestServerServe(t *testing.T) {
 	t.Run("serve with middleware", func(t *testing.T) {
 		m := &mockService{}
 
-		s := NewServer(context.Background(), WithAddr(":4242"))
+		s := New(context.Background(), WithAddr(":4242"))
 		s.Middleware(func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				defer func() {
@@ -284,7 +284,7 @@ func TestServerServe(t *testing.T) {
 	t.Run("serve tls", func(t *testing.T) {
 		tlsConfig := setupTLS(t, "./test/insecure_cert.pem", "./test/insecure_key.pem")
 		m := &mockService{}
-		s := NewServer(context.Background(), WithTLS(tlsConfig), WithAddr(":2424"))
+		s := New(context.Background(), WithTLS(tlsConfig), WithAddr(":2424"))
 		s.Register(m)
 
 		require.Equal(t, len(s.services), 1)
