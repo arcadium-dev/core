@@ -88,8 +88,9 @@ func NewServer(version, branch, commit, date string, mw ...mux.MiddlewareFunc) *
 	}
 
 	s.C.NewHTTPServer = func(ctx context.Context, cfg Config) (*server.Server, error) {
-		// Load the tls certificate if set.
 		var tlsConfig *tls.Config
+
+		// Setup HTTPS.
 		if cfg.TLSCert() != "" && cfg.TLSKey() != "" {
 			cert, err := tls.LoadX509KeyPair(cfg.TLSCert(), cfg.TLSKey())
 			if err != nil {
@@ -98,16 +99,19 @@ func NewServer(version, branch, commit, date string, mw ...mux.MiddlewareFunc) *
 			tlsConfig = &tls.Config{
 				Certificates: []tls.Certificate{cert},
 			}
+		}
 
-			if cfg.TLSCACert() != "" && cfg.MTLSEnabled() {
-				tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-				tlsConfig.ClientCAs = x509.NewCertPool()
-				caCert, err := os.ReadFile(cfg.TLSCACert())
-				if err != nil {
-					return nil, fmt.Errorf("failed to load the tls client CA certificate: %w", err)
-				}
-				tlsConfig.ClientCAs.AppendCertsFromPEM(caCert)
+		// Setup MTLS.
+		if cfg.MTLSEnabled() {
+			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+		}
+		if cfg.TLSCACert() != "" {
+			tlsConfig.ClientCAs = x509.NewCertPool()
+			caCert, err := os.ReadFile(cfg.TLSCACert())
+			if err != nil {
+				return nil, fmt.Errorf("failed to load the tls client CA certificate: %w", err)
 			}
+			tlsConfig.ClientCAs.AppendCertsFromPEM(caCert)
 		}
 
 		// Gather the server options.
