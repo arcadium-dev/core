@@ -29,7 +29,7 @@ import (
 func Contains(t *testing.T, actual, expected string) {
 	t.Helper()
 	if !strings.Contains(actual, expected) {
-		t.Errorf("\nExpected: %s\nActual:   %s", expected, actual)
+		t.Errorf("\nActual:   %s\nExpected: %s", actual, expected)
 	}
 }
 
@@ -39,7 +39,7 @@ func Contains(t *testing.T, actual, expected string) {
 func Equal[T comparable](t *testing.T, actual, expected T) {
 	t.Helper()
 	if actual != expected {
-		t.Errorf("\nExpected: %+v\nActual:   %+v", expected, actual)
+		t.Errorf("\nActual:   %+v\nExpected: %+v", actual, expected)
 	}
 }
 
@@ -58,7 +58,7 @@ func NotEqual[T comparable](t *testing.T, actual, expected T) {
 func Compare[T any](t *testing.T, actual, expected T, opts ...cmp.Option) {
 	t.Helper()
 	if !cmp.Equal(actual, expected, opts...) {
-		t.Errorf("\nExpected: %+v\nActual:   %+v", expected, actual)
+		t.Errorf("\nActual:   %+v\nExpected: %+v", actual, expected)
 	}
 }
 
@@ -69,7 +69,7 @@ func Error(t *testing.T, err error, expected string) {
 		t.Fatal("Expected an error")
 	}
 	if expected != err.Error() {
-		t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
+		t.Errorf("\nActual error:   %s\nExpected error: %s", err, expected)
 	}
 }
 
@@ -80,7 +80,7 @@ func IsError(t *testing.T, actual, expected error) {
 		t.Fatal("Expected an error")
 	}
 	if !errors.Is(actual, expected) {
-		t.Errorf("\nExpected error: %s\nActual error:   %s", expected, actual)
+		t.Errorf("\nActual:   %s\nExpected: %s", actual, expected)
 	}
 }
 

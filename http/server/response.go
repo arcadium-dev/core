@@ -57,16 +57,16 @@ func Response(ctx context.Context, w http.ResponseWriter, err error) {
 		logger.Warn().Msgf("reason: %s", err.Error())
 	}
 
-	w.WriteHeader(respErr.Status)
-
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	httpErrorCount.WithLabelValues(strconv.Itoa(respErr.Status)).Inc()
+	w.WriteHeader(respErr.Status)
 
 	if encErr := json.NewEncoder(w).Encode(respErr); encErr != nil {
 		zerolog.Ctx(ctx).Err(encErr).Msg("unable to write error response")
 	}
+
+	httpErrorCount.WithLabelValues(strconv.Itoa(respErr.Status)).Inc()
 }
 
 type (
