@@ -16,20 +16,25 @@
 package assert // import "arcadium.dev/core/assert"
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
+	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/go-cmp/cmp"
+
+	"arcadium.dev/core/http/server"
 )
 
 // Contains asserts that the expected string is contained in the actual string.
 func Contains(t *testing.T, actual, expected string) {
 	t.Helper()
 	if !strings.Contains(actual, expected) {
-		t.Errorf("\nExpected: %s\nActual:   %s", expected, actual)
+		t.Errorf("\nActual:   %s\nExpected: %s", actual, expected)
 	}
 }
 
@@ -39,7 +44,7 @@ func Contains(t *testing.T, actual, expected string) {
 func Equal[T comparable](t *testing.T, actual, expected T) {
 	t.Helper()
 	if actual != expected {
-		t.Errorf("\nExpected: %+v\nActual:   %+v", expected, actual)
+		t.Errorf("\nActual:   %s\nExpected: %s", actual, expected)
 	}
 }
 
@@ -58,7 +63,7 @@ func NotEqual[T comparable](t *testing.T, actual, expected T) {
 func Compare[T any](t *testing.T, actual, expected T, opts ...cmp.Option) {
 	t.Helper()
 	if !cmp.Equal(actual, expected, opts...) {
-		t.Errorf("\nExpected: %+v\nActual:   %+v", expected, actual)
+		t.Errorf("\nActual:   %s\nExpected: %s", actual, expected)
 	}
 }
 
@@ -69,7 +74,7 @@ func Error(t *testing.T, err error, expected string) {
 		t.Fatal("Expected an error")
 	}
 	if expected != err.Error() {
-		t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
+		t.Errorf("\nActual error:   %s\nExpected error: %s", err, expected)
 	}
 }
 
@@ -80,8 +85,24 @@ func IsError(t *testing.T, actual, expected error) {
 		t.Fatal("Expected an error")
 	}
 	if !errors.Is(actual, expected) {
-		t.Errorf("\nExpected error: %s\nActual error:   %s", expected, actual)
+		t.Errorf("\nActual:   %s\nExpected: %s", actual, expected)
 	}
+}
+
+func ResponseError(t *testing.T, w *httptest.ResponseRecorder, status int, errMsg string) {
+	resp := w.Result()
+	Equal(t, resp.StatusCode, status)
+
+	body, err := io.ReadAll(resp.Body)
+	Nil(t, err)
+	defer resp.Body.Close()
+
+	var respErr server.ResponseError
+	err = json.Unmarshal(body, &respErr)
+	Nil(t, err)
+
+	Contains(t, respErr.Detail, errMsg)
+	Equal(t, respErr.Status, status)
 }
 
 // MockExpectationsMet asserts that the expectations for the given mock were
