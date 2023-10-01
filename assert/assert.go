@@ -44,7 +44,7 @@ func Contains(t *testing.T, actual, expected string) {
 func Equal[T comparable](t *testing.T, actual, expected T) {
 	t.Helper()
 	if actual != expected {
-		t.Errorf("\nActual:   %s\nExpected: %s", actual, expected)
+		t.Errorf("\nActual:   %+v\nExpected: %+v", actual, expected)
 	}
 }
 
@@ -63,7 +63,7 @@ func NotEqual[T comparable](t *testing.T, actual, expected T) {
 func Compare[T any](t *testing.T, actual, expected T, opts ...cmp.Option) {
 	t.Helper()
 	if !cmp.Equal(actual, expected, opts...) {
-		t.Errorf("\nActual:   %s\nExpected: %s", actual, expected)
+		t.Errorf("\nActual:   %+v\nExpected: %+v", actual, expected)
 	}
 }
 
