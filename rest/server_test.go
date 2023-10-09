@@ -17,7 +17,7 @@ func TestServerInit(t *testing.T) {
 	t.Run("new config failure", func(t *testing.T) {
 		s, b := setup(t)
 
-		s.C.NewConfig = func() (rest.Config, error) {
+		s.C.NewConfig = func(...string) (rest.Config, error) {
 			return rest.Config{}, errors.New("new config failure")
 		}
 
@@ -60,9 +60,9 @@ func TestServerStart(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		s, _ := setup(t)
+		s, _ := setup(t, "TEST_")
 
-		assert.Nil(t, s.Init())
+		assert.Nil(t, s.Init("test"))
 
 		r := make(chan error, 1)
 		go func() { r <- s.Start() }()
@@ -73,22 +73,27 @@ func TestServerStart(t *testing.T) {
 	})
 }
 
-func setup(t *testing.T) (*rest.Server, *log.StringBuffer) {
+func setup(t *testing.T, prefix ...string) (*rest.Server, *log.StringBuffer) {
 	s := rest.NewServer("version", "branch", "commit", "date")
 
 	b := log.NewStringBuffer()
 	s.Stdout = b
 	s.Stderr = b
 
-	t.Setenv("DSN", "root:password@tcp(mariadb:3306)/dbname")
-	t.Setenv("SERVER_ADDR", ":8443")
-	t.Setenv("LOG_LEVEL", "debug")
-	t.Setenv("TLS_CERT", "")
-	t.Setenv("TLS_KEY", "")
-	t.Setenv("MTLS_ENABLED", "false")
-	t.Setenv("ALLOWED_ORIGINS", "https://*.arcadium.dev")
-	t.Setenv("ALLOWED_METHODS", "GET")
-	t.Setenv("ALLOWED_HEADERS", "*")
+	p := ""
+	if len(prefix) == 1 {
+		p = prefix[0]
+	}
+
+	t.Setenv(p+"DSN", "root:password@tcp(mariadb:3306)/dbname")
+	t.Setenv(p+"SERVER_ADDR", ":8443")
+	t.Setenv(p+"LOG_LEVEL", "debug")
+	t.Setenv(p+"TLS_CERT", "")
+	t.Setenv(p+"TLS_KEY", "")
+	t.Setenv(p+"MTLS_ENABLED", "false")
+	t.Setenv(p+"ALLOWED_ORIGINS", "https://*.arcadium.dev")
+	t.Setenv(p+"ALLOWED_METHODS", "GET")
+	t.Setenv(p+"ALLOWED_HEADERS", "*")
 
 	return s, b
 }
