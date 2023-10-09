@@ -42,7 +42,7 @@ const (
 )
 
 // NewConfig returns the configuration of restful api server.
-func NewConfig() (Config, error) {
+func NewConfig(prefix ...string) (Config, error) {
 	cfg := struct {
 		LogLevel       string `split_words:"true"`
 		TlsCert        string `split_words:"true"`
@@ -57,7 +57,12 @@ func NewConfig() (Config, error) {
 	}{
 		LogLevel: DefaultLogLevel,
 	}
-	if err := envconfig.Process("", &cfg); err != nil {
+
+	pfix := ""
+	if len(prefix) == 1 {
+		pfix = prefix[0]
+	}
+	if err := envconfig.Process(pfix, &cfg); err != nil {
 		return Config{}, fmt.Errorf("failed to load configuration: %w", err)
 	}
 

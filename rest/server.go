@@ -58,7 +58,7 @@ type (
 
 	// Constructors provide a way to inject different functions to create server components.
 	Constructors struct {
-		NewConfig     func() (Config, error)
+		NewConfig     func(...string) (Config, error)
 		NewLogger     func(Config) (*zerolog.Logger, error)
 		NewHTTPServer func(context.Context, Config) (*server.Server, error)
 	}
@@ -147,7 +147,7 @@ func NewServer(version, branch, commit, date string, mw ...mux.MiddlewareFunc) *
 }
 
 // Init initializes the server object.
-func (s *Server) Init() error {
+func (s *Server) Init(prefix ...string) error {
 	var (
 		err    error
 		cancel context.CancelFunc
@@ -164,7 +164,7 @@ func (s *Server) Init() error {
 	lg.SetOutput(s.Stdout)
 
 	// Load the config.
-	s.cfg, err = s.C.NewConfig()
+	s.cfg, err = s.C.NewConfig(prefix...)
 	if err != nil {
 		lg.Printf("error: failed to load config: %s", err)
 		return fmt.Errorf("failed to load config: %w", err)

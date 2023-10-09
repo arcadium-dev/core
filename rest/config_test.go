@@ -15,9 +15,9 @@ func TestNewConfig(t *testing.T) {
 	}
 
 	t.Run("test defaults", func(t *testing.T) {
-		t.Setenv("SERVER_ADDR", ":8443")
+		t.Setenv("TEST_SERVER_ADDR", ":8443")
 
-		cfg, err := rest.NewConfig()
+		cfg, err := rest.NewConfig("test")
 
 		assert.Nil(t, err)
 		assert.Equal(t, cfg.LogLevel(), rest.DefaultLogLevel)
