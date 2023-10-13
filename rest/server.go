@@ -246,3 +246,5 @@ func (s Server) Stop() {
 	s.wg.Wait()
 	close(s.interrupt)
 }
+
+func (s Server) Ctx() context.Context { return s.ctx }
