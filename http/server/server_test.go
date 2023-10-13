@@ -38,7 +38,7 @@ func TestServerNew(t *testing.T) {
 		New(ctx, WithTLS(cfg))
 
 		require.Equal(t, b.Len(), 2)
-		assert.Equal(t, b.Index(1), `{"severity":"info","message":"http server created, address ':8443', tls: enabled"}`+"\n")
+		assert.Equal(t, b.Index(1), `{"severity":"info","message":"https server created, address ':8443', tls: enabled"}`+"\n")
 	})
 }
 

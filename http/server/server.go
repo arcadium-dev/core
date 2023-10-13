@@ -47,6 +47,7 @@ type (
 		listener net.Listener
 		server   *http.Server
 		router   *mux.Router
+		scheme   string
 
 		mu       sync.RWMutex
 		services []Service
@@ -82,6 +83,7 @@ func New(ctx context.Context, opts ...Option) *Server {
 		logger:          zerolog.Ctx(ctx),
 		server:          &http.Server{},
 		router:          mux.NewRouter(),
+		scheme:          "http",
 		shutdownTimeout: defaultShutdownTimeout,
 	}
 
@@ -110,12 +112,13 @@ func New(ctx context.Context, opts ...Option) *Server {
 	// Set up the logging fields.
 	tlsMsg := ""
 	if s.server.TLSConfig != nil {
+		s.scheme = "https"
 		tlsMsg = ", tls: enabled"
 		if s.server.TLSConfig.ClientAuth == tls.RequireAndVerifyClientCert {
 			tlsMsg = ", mtls: enabled"
 		}
 	}
-	s.logger.Info().Msgf("http server created, address '%s'%s", s.addr, tlsMsg)
+	s.logger.Info().Msgf("%s server created, address '%s'%s", s.scheme, s.addr, tlsMsg)
 
 	return s
 }
@@ -156,8 +159,8 @@ func (s *Server) Serve() error {
 	s.mu.RUnlock()
 	services := strings.Join(serviceNames, ",")
 
-	s.logger.Info().Msgf("begin serving http, address '%s', services: %s", s.addr, services)
-	defer s.logger.Info().Msgf("serving http complete, address '%s', services: %s", s.addr, services)
+	s.logger.Info().Msgf("begin serving %s, address '%s', services: %s", s.scheme, s.addr, services)
+	defer s.logger.Info().Msgf("serving %s complete, address '%s', services: %s", s.scheme, s.addr, services)
 
 	if s.server.TLSConfig != nil {
 		err = s.server.ServeTLS(s.listener, "", "")
