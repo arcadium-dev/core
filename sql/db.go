@@ -47,9 +47,9 @@ var (
 type (
 	// DB is a simple wrapper of sql.db.
 	DB struct {
+		DB               *sql.DB
 		driver           string
 		connectURL       string
-		db               *sql.DB
 		middleware       []MiddlewareFunc
 		reconnectRetries int
 		txRetries        int
@@ -127,7 +127,7 @@ func Open(ctx context.Context, driver, connectURL string, opts ...Option) (*DB, 
 		sqlDB.Close()
 		return nil, fmt.Errorf("failed to connect to the database: %w", err)
 	}
-	db.db = sqlDB
+	db.DB = sqlDB
 
 	var (
 		user, host string
@@ -145,12 +145,12 @@ func Open(ctx context.Context, driver, connectURL string, opts ...Option) (*DB, 
 
 // Ping checks DB status for the health checker
 func (db *DB) Ping(ctx context.Context) error {
-	return db.db.PingContext(ctx)
+	return db.DB.PingContext(ctx)
 }
 
 // Close closes the database and prevents new queries from starting.
 func (db *DB) Close() error {
-	return db.db.Close()
+	return db.DB.Close()
 }
 
 // Exec executes a query without returning any rows.
@@ -159,7 +159,7 @@ func (db *DB) Exec(ctx context.Context, query string, args ...any) (Result, erro
 
 	err := db.run(ctx, query, func(c context.Context) error {
 		var e error
-		result, e = db.db.ExecContext(c, query, args...)
+		result, e = db.DB.ExecContext(c, query, args...)
 		return e
 	})
 
@@ -172,7 +172,7 @@ func (db *DB) Query(ctx context.Context, query string, args ...any) (*Rows, erro
 
 	err := db.run(ctx, query, func(c context.Context) error {
 		var e error
-		rows, e = db.db.QueryContext(c, query, args...)
+		rows, e = db.DB.QueryContext(c, query, args...)
 		return e
 	})
 
@@ -184,7 +184,7 @@ func (db *DB) QueryRow(ctx context.Context, query string, args ...any) *Row {
 	var row *Row
 
 	db.run(ctx, query, func(c context.Context) error {
-		row = db.db.QueryRowContext(ctx, query, args...)
+		row = db.DB.QueryRowContext(ctx, query, args...)
 		return nil
 	})
 
@@ -197,7 +197,7 @@ func (db *DB) BeginTx(ctx context.Context, opts *TxOptions) (*Tx, error) {
 
 	err := db.run(ctx, "", func(c context.Context) error {
 		var e error
-		tx, e = db.db.BeginTx(ctx, opts)
+		tx, e = db.DB.BeginTx(ctx, opts)
 		return e
 	})
 
@@ -222,7 +222,7 @@ func (db *DB) Tx(ctx context.Context, opts *TxOptions, fn func(tx *Tx) error) er
 }
 
 func (db *DB) executeTx(ctx context.Context, opts *TxOptions, fn func(tx *Tx) error) (err error) {
-	tx, err := db.db.BeginTx(ctx, opts)
+	tx, err := db.DB.BeginTx(ctx, opts)
 	if err != nil {
 		return err
 	}
@@ -307,10 +307,10 @@ func (db *DB) reconnect(f Func) Func {
 			logger.Info().Msg("database admin shutdown detected, reconnected")
 
 			// Close the prior connection after we have a known good connection.
-			if e := db.db.Close(); e != nil {
+			if e := db.DB.Close(); e != nil {
 				logger.Warn().Msgf("failed to close existing db connection after admin shutdown, reason: %s", e)
 			}
-			db.db = sqlDB
+			db.DB = sqlDB
 			err = nil
 		}
 		return err
