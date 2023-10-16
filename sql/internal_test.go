@@ -6,11 +6,6 @@ import (
 	"time"
 )
 
-var (
-// ContextWithQuery = contextWithQuery
-// QueryFromContext = queryFromContext
-)
-
 type OpenFunc func(driverName, dataSourceName string) (*sql.DB, error)
 
 func SetOpen(newOpen OpenFunc) OpenFunc {
