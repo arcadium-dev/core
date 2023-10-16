@@ -44,7 +44,7 @@ func NewDB(db *sql.DB, retries ...int) *DB {
 	}
 
 	return &DB{
-		db:               db,
+		DB:               db,
 		middleware:       []MiddlewareFunc{mockMiddleware, mockMiddleware},
 		reconnectRetries: reconnectRetries,
 		txRetries:        txRetries,
@@ -52,7 +52,7 @@ func NewDB(db *sql.DB, retries ...int) *DB {
 }
 
 func (db *DB) SetDB(sqlDB *sql.DB) {
-	db.db = sqlDB
+	db.DB = sqlDB
 }
 
 func (db *DB) Reconnect(f Func) Func {
