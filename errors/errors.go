@@ -104,4 +104,14 @@ var (
 		status: http.StatusNotImplemented,
 		msg:    strings.ToLower(http.StatusText(http.StatusNotImplemented)),
 	}
+
+	// HTTPErrors maps http statuses back to manifest http errors.
+	HTTPErrors = map[int]HTTPError{
+		http.StatusBadRequest:          ErrBadRequest,
+		http.StatusForbidden:           ErrForbidden,
+		http.StatusNotFound:            ErrNotFound,
+		http.StatusConflict:            ErrConflict,
+		http.StatusInternalServerError: ErrInternal,
+		http.StatusNotImplemented:      ErrNotImplemented,
+	}
 )
