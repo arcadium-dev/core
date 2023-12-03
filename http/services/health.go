@@ -14,7 +14,7 @@
 
 // Package provides a set of simple services that can be used the the http
 // server.
-package services // import "arcadium.dev/core/services"
+package services // import "arcadium.dev/core/http/services"
 
 import (
 	"encoding/json"

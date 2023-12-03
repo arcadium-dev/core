@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package server provides an http server.
-package server
+package server // import "arcadium.dev/core/http/server"
 
 import (
 	"context"

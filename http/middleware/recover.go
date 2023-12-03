@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package middleware // import "arcadium.dev/core/middleware"
+package middleware // import "arcadium.dev/core/http/middleware"
 
 import (
 	"net/http"

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package middleware provides a set of middleware for the http server.
-package middleware // import "arcadium.dev/core/middleware"
+package middleware // import "arcadium.dev/core/http/middleware"
 
 import (
 	"net/http"

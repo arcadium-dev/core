@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package services // import "arcadium.dev/core/services"
+package services // import "arcadium.dev/core/http/services"
 
 import (
 	"net/http"
