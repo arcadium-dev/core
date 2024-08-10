@@ -29,7 +29,7 @@ import (
 func Contains(t *testing.T, actual, expected string) {
 	t.Helper()
 	if !strings.Contains(actual, expected) {
-		t.Errorf("\nActual:   %s\nExpected: %s", actual, expected)
+		t.Errorf("\nExpected: %s\nActual:   %s", expected, actual)
 	}
 }
 
@@ -39,7 +39,7 @@ func Contains(t *testing.T, actual, expected string) {
 func Equal[T comparable](t *testing.T, actual, expected T) {
 	t.Helper()
 	if actual != expected {
-		t.Errorf("\nActual:   %+v\nExpected: %+v", actual, expected)
+		t.Errorf("\nExpected: %+v\nActual:   %+v", expected, actual)
 	}
 }
 
@@ -58,7 +58,7 @@ func NotEqual[T comparable](t *testing.T, actual, expected T) {
 func Compare[T any](t *testing.T, actual, expected T, opts ...cmp.Option) {
 	t.Helper()
 	if !cmp.Equal(actual, expected, opts...) {
-		t.Errorf("\nActual:   %+v\nExpected: %+v", actual, expected)
+		t.Errorf("\nExpected: %+v\nActual:   %+v", expected, actual)
 	}
 }
 
@@ -69,7 +69,7 @@ func Error(t *testing.T, err error, expected string) {
 		t.Fatal("Expected an error")
 	}
 	if expected != err.Error() {
-		t.Errorf("\nActual error:   %s\nExpected error: %s", err, expected)
+		t.Errorf("\nExpected error: %s\nActual error:   %s", expected, err)
 	}
 }
 
@@ -80,7 +80,7 @@ func IsError(t *testing.T, actual, expected error) {
 		t.Fatal("Expected an error")
 	}
 	if !errors.Is(actual, expected) {
-		t.Errorf("\nActual:   %s\nExpected: %s", actual, expected)
+		t.Errorf("\nExpected error: %s\nActual error:   %s", expected, actual)
 	}
 }
 
@@ -96,6 +96,9 @@ func MockExpectationsMet(t *testing.T, mock sqlmock.Sqlmock) {
 // Nil asserts that the value of the given object is nil.
 func Nil(t *testing.T, object any) {
 	t.Helper()
+	if object == nil {
+		return
+	}
 
 	value := reflect.ValueOf(object)
 	kind := value.Kind()
@@ -107,9 +110,6 @@ func Nil(t *testing.T, object any) {
 			}
 		}
 	}
-	if object == nil {
-		return
-	}
 
 	t.Errorf("Unexpected non-nil value: %+v", object)
 }
@@ -117,6 +117,9 @@ func Nil(t *testing.T, object any) {
 // NotNil asserts that the value of the given object is not nil.
 func NotNil(t *testing.T, object any) {
 	t.Helper()
+	if object != nil {
+		return
+	}
 
 	value := reflect.ValueOf(object)
 	kind := value.Kind()
@@ -127,9 +130,6 @@ func NotNil(t *testing.T, object any) {
 				return
 			}
 		}
-	}
-	if object != nil {
-		return
 	}
 
 	t.Errorf("Unexpected nil value: %+v", object)

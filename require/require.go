@@ -41,6 +41,9 @@ func NotEqual[T comparable](t *testing.T, actual, expected T) {
 // Nil requires that the value of the given object is nil.
 func Nil(t *testing.T, object any) {
 	t.Helper()
+	if object == nil {
+		return
+	}
 
 	value := reflect.ValueOf(object)
 	kind := value.Kind()
@@ -52,9 +55,6 @@ func Nil(t *testing.T, object any) {
 			}
 		}
 	}
-	if object == nil {
-		return
-	}
 
 	t.Fatalf("Unexpected non-nil value: %+v", object)
 }
@@ -62,6 +62,9 @@ func Nil(t *testing.T, object any) {
 // NotNil requires that the value of the given object is not nil.
 func NotNil(t *testing.T, object any) {
 	t.Helper()
+	if object != nil {
+		return
+	}
 
 	value := reflect.ValueOf(object)
 	kind := value.Kind()
@@ -72,9 +75,6 @@ func NotNil(t *testing.T, object any) {
 				return
 			}
 		}
-	}
-	if object != nil {
-		return
 	}
 
 	t.Fatalf("Unexpected nil value: %+v", object)
