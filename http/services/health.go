@@ -1,4 +1,4 @@
-// Copyright 2021-2023 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2024 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 // Package provides a set of simple services that can be used the the http
 // server.
-package services // import "arcadium.dev/core/services"
+package services // import "arcadium.dev/core/http/services"
 
 import (
 	"encoding/json"
