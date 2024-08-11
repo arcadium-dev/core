@@ -50,6 +50,20 @@ func WithCORS(c *cors.Options) Option {
 	})
 }
 
+// WithReadTimeout sets the http server read timeout.
+func WithReadTimeout(timeout time.Duration) Option {
+	return newOption(func(s *Server) {
+		s.server.ReadTimeout = timeout
+	})
+}
+
+// WithWriteTimeout sets the http server read timeout.
+func WithWriteTimeout(timeout time.Duration) Option {
+	return newOption(func(s *Server) {
+		s.server.WriteTimeout = timeout
+	})
+}
+
 // WithShutdownTimeout sets the timout for shutting down the server.
 func WithShutdownTimeout(timeout time.Duration) Option {
 	return newOption(func(s *Server) {

@@ -38,6 +38,24 @@ func TestWithCORS(t *testing.T) {
 	assert.NotNil(t, s.corsOptions)
 }
 
+func TestWithReadTimeout(t *testing.T) {
+	s := &Server{server: &http.Server{}}
+
+	timeout := 50 * time.Second
+	WithReadTimeout(timeout).apply(s)
+
+	assert.Equal(t, s.server.ReadTimeout, timeout)
+}
+
+func TestWithWriteTimeout(t *testing.T) {
+	s := &Server{server: &http.Server{}}
+
+	timeout := 50 * time.Second
+	WithWriteTimeout(timeout).apply(s)
+
+	assert.Equal(t, s.server.WriteTimeout, timeout)
+}
+
 func TestWithShutdownTimeout(t *testing.T) {
 	s := &Server{}
 	timeout := 52 * time.Second

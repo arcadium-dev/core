@@ -21,6 +21,8 @@ func TestServerNew(t *testing.T) {
 
 		assert.Equal(t, s.addr, defaultAddr)
 		assert.Equal(t, s.shutdownTimeout, defaultShutdownTimeout)
+		assert.Equal(t, s.server.ReadTimeout, defaultReadTimeout)
+		assert.Equal(t, s.server.WriteTimeout, defaultWriteTimeout)
 	})
 
 	t.Run("without tls", func(t *testing.T) {
@@ -179,43 +181,6 @@ func TestServerCORS(t *testing.T) {
 		acah := w.Header().Get("Access-Control-Allow-Headers")
 		assert.Equal(t, acah, "X-Requested-With,Content-Type,X-Okta-User-Agent-Extended")
 	})
-
-	/* FIXME
-	t.Run("success - custom cors", func(t *testing.T) {
-		ctx, b := log.SetupTestLogging(t)
-		s := New(ctx, WithCORS(&cors.Options{
-			AllowedOrigins: []string{"https://*.arcadium.dev"},
-			AllowedMethods: []string{"GET"},
-			AllowedHeaders: []string{"X-Requested-With", "Content-Type"},
-		}))
-
-		require.Equal(t, b.Len(), 4)
-		assert.Equal(t, b.Index(0), `{"severity":"info","message":"cors allowed origins: [\"https://*.arcadium.dev\"]"}`+"\n")
-		assert.Equal(t, b.Index(1), `{"severity":"info","message":"cors allowed methods: [\"GET\"]"}`+"\n")
-		assert.Equal(t, b.Index(2), `{"severity":"info","message":"cors allowed headers: [\"X-Requested-With\" \"Content-Type\"]"}`+"\n")
-		assert.Equal(t, b.Index(3), `{"severity":"info","message":"http server created, address ':8443'"}`+"\n")
-
-		r := httptest.NewRequest(http.MethodOptions, "/", nil)
-		w := httptest.NewRecorder()
-
-		r.Header.Set("Origin", "https://arcade.arcadium.dev")
-		r.Header.Set("Access-Control-Request-Method", "GET")
-		r.Header.Set("Access-Control-Request-Headers", "X-Requested-With,Content-Type")
-
-		s.server.Handler.ServeHTTP(w, r)
-
-		assert.Equal(t, w.Code, http.StatusNoContent)
-
-		acao := w.Header().Get("Access-Control-Allow-Origin")
-		assert.Equal(t, acao, "https://arcade.arcadium.dev")
-
-		acam := w.Header().Get("Access-Control-Allow-Methods")
-		assert.Equal(t, acam, http.MethodGet)
-
-		acah := w.Header().Get("Access-Control-Allow-Headers")
-		assert.Equal(t, acah, "X-Requested-With, Content-Type")
-	})
-	*/
 }
 
 func TestServerServe(t *testing.T) {
