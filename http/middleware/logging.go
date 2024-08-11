@@ -1,4 +1,4 @@
-// Copyright 2021-2023 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2024 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package middleware provides a set of middleware for the http server.
-package middleware // import "arcadium.dev/core/middleware"
+package middleware // import "arcadium.dev/core/http/middleware"
 
 import (
 	"net/http"
