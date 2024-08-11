@@ -33,6 +33,8 @@ import (
 
 const (
 	defaultAddr            = ":8443"
+	defaultReadTimeout     = 5 * time.Second
+	defaultWriteTimeout    = 10 * time.Second
 	defaultShutdownTimeout = 10 * time.Second
 )
 
@@ -79,9 +81,12 @@ func (c corsLogger) Printf(f string, v ...any) {
 // New creates an HTTP server with and has not started to accept requests yet.
 func New(ctx context.Context, opts ...Option) *Server {
 	s := &Server{
-		addr:            defaultAddr,
-		logger:          zerolog.Ctx(ctx),
-		server:          &http.Server{},
+		addr:   defaultAddr,
+		logger: zerolog.Ctx(ctx),
+		server: &http.Server{
+			ReadTimeout:  defaultReadTimeout,
+			WriteTimeout: defaultWriteTimeout,
+		},
 		router:          mux.NewRouter(),
 		scheme:          "http",
 		shutdownTimeout: defaultShutdownTimeout,
