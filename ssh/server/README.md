@@ -89,6 +89,11 @@ Channel is an interface that satisfies `io.ReadWriteCloser`. It has three additi
 - [ ] Create a "hello world" ssh server and authenticate with a public key.
 
 
+# TODO
+- Read: https://blog.gopheracademy.com/go-and-ssh/
+- https://github.com/jpillora/sshd-lite
+- https://pkg.go.dev/github.com/paastech-cloud/git-ssh-server@v1.0.1
+
 # References
 
 - [Go SSH server complete example](https://gist.github.com/jpillora/b480fde82bff51a06238), - Read more here https://blog.gopheracademy.com/go-and-ssh/
