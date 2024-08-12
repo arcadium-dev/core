@@ -36,8 +36,13 @@ var (
 type (
 	// Server provides an ssh server.
 	Server struct {
-		mu       sync.RWMutex
+		mu sync.RWMutex
+		// FIXME: rename to something other than services. It's just wrong. There can only be one of them.
 		services map[ChannelType]ChannelHandler
+
+		// FIXME: do we want to keep track of the connections? Maybe with out own
+		// connection type that has information about the source of the connection,
+		// and the ssh identity of the connection?
 
 		addr   string
 		config ssh.ServerConfig
