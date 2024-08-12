@@ -121,8 +121,8 @@ func (s *Server) HandleConn(conn net.Conn) {
 	defer s.mu.RUnlock()
 
 	for ch := range chans {
-		service := s.services[ChannelType(ch.ChannelType())]
-		if service == nil {
+		service, ok := s.services[ChannelType(ch.ChannelType())]
+		if !ok {
 			ch.Reject(ssh.UnknownChannelType, "unsupported channel type")
 			continue
 		}
