@@ -1,4 +1,4 @@
-# Notes frimn "Go SSH server complete example"
+# Notes from "Go SSH server complete example"
 
 
 ## `main()`
@@ -18,7 +18,7 @@
 
 1. If the channel type of the `NewChannel` isn't "session", it `Reject`s the `NewChannel` and returns.
 
-2. It `Accept` the `NewChannel`. This returns a `Channel` and a channel &lt;- chan *ssh.Request, or an error.
+2. It `Accept`s the `NewChannel`. This returns a `Channel` and a channel `<- chan *ssh.Request`, or an error.
 
 3. A bash command is created using `exec.Command("bash")`, and started using a pty, We then connect the 
    `Channel`'s Reader and Writer to the pty's `*os.File` Reader and Writer.
@@ -48,44 +48,43 @@ use of the `PublicKeyCallback`.
 **Exercise:** Create a "hello world" ssh server and authenticate with a public key.
 
 Also of interest:
--   MaxAuthTries int                    // If set to zero, the number of attempts are limited to 6.
+-   `MaxAuthTries int`                    // If set to zero, the number of attempts are limited to 6.
 
--   NoClientAuth boolNoClientAuth bool  // NoClientAuth is true if clients are allowed to connect without authenticating.
--   NoClientAuthCallback func(ConnMetadata) (*Permissions, error)
+-   `NoClientAuth boolNoClientAuth bool`  // NoClientAuth is true if clients are allowed to connect without authenticating.
+-   `NoClientAuthCallback func(ConnMetadata) (*Permissions, error)`
 
 
 ### [ServerConfig.AddHostKey](https://pkg.go.dev/golang.org/x/crypto/ssh#ServerConfig.AddHostKey)
 AddHostKey adds a private key as a host key. If an existing host key exists with the same public key format, it is replaced. Each server config must have at least one host key.
 
-This is required for a server. See Signer / ParsePrivateKey below. These are used to parse the key from a file, which is then fed to AddHostKey.
+This is required for a server. See `Signer`/`ParsePrivateKey` below. These are used to parse the key from a file, which is then fed to AddHostKey.
 
 ## [Signer](https://pkg.go.dev/golang.org/x/crypto/ssh#Signer)
 
-### [ParsePrivateKey]https://pkg.go.dev/golang.org/x/crypto/ssh#ParsePrivateKey)
+### [ParsePrivateKey](https://pkg.go.dev/golang.org/x/crypto/ssh#ParsePrivateKey)
 Used to parse a private key from a series of bytes. Can be used when setting up a server's private host key config.
 
 
 ## [ServerConn](https://pkg.go.dev/golang.org/x/crypto/ssh#ServerConn)
 
 ### [NewServerConn](https://pkg.go.dev/golang.org/x/crypto/ssh#NewServerConn)
-This returns a *ssh.ServerConn, a channel &lt;- chan ssh.NewChannel, and another channel &lt;- chan *ssh.Request.
+This returns a `*ssh.ServerConn`, a channel `<- chan ssh.NewChannel`, and another channel `<- chan *ssh.Request`.
 
 The underlying transport is the tcp connection. 
 
-The channel of NewChannel delivers new ssh channels being created.
+The channel of `NewChannel` delivers new ssh channels being created.
 
-The channel is Requests delivers out of band requests.
+The channel of `Request` delivers out of band requests.
 
 
 ## [NewChannel](https://pkg.go.dev/golang.org/x/crypto/ssh#NewChannel)
-NewChannel represents an incoming request to a channel. It must either be accepted for use by calling Accept, or rejected by calling Reject.
+NewChannel represents an incoming request to a channel. It must either be accepted for use by calling `Accept`, or rejected by calling `Reject`.
 
 ## [Channel](https://pkg.go.dev/golang.org/x/crypto/ssh#Channel)
 Channel is an interface that satisfies `io.ReadWriteCloser`. It has three additional methods.
 
 
 # Exercises
-
 - [ ] Build and run the gist from [Go SSH server complete example](https://gist.github.com/jpillora/b480fde82bff51a06238)
 - [ ] Create a "hello world" ssh server and authenticate with a public key.
 
