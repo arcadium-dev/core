@@ -10,6 +10,7 @@ require (
 	github.com/prometheus/client_golang v1.19.1
 	github.com/rs/cors v1.11.0
 	github.com/rs/zerolog v1.33.0
+	golang.org/x/crypto v0.26.0
 	golang.org/x/exp v0.0.0-20240409090435-93d18d7e34b8
 	golang.org/x/vuln v1.1.3
 	honnef.co/go/tools v0.4.7
@@ -27,7 +28,7 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20221208152030-732eee02a75a // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
 	golang.org/x/tools v0.23.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect

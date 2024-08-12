@@ -1,6 +1,6 @@
 //go:build tools
 
-package tools
+package core
 
 import (
 	_ "golang.org/x/vuln/cmd/govulncheck"
