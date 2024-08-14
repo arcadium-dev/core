@@ -1,6 +1,7 @@
 module arcadium.dev/core
 
 go 1.22
+toolchain go1.22.5
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
@@ -12,11 +13,11 @@ require (
 	github.com/rs/zerolog v1.33.0
 	golang.org/x/exp v0.0.0-20240409090435-93d18d7e34b8
 	golang.org/x/vuln v1.1.3
-	honnef.co/go/tools v0.4.7
+	honnef.co/go/tools v0.5.0
 )
 
 require (
-	github.com/BurntSushi/toml v1.2.1 // indirect
+	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -24,7 +25,7 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	golang.org/x/exp/typeparams v0.0.0-20221208152030-732eee02a75a // indirect
+	golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678 // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
