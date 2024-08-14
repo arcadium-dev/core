@@ -12,7 +12,7 @@ require (
 	github.com/rs/zerolog v1.33.0
 	golang.org/x/exp v0.0.0-20240409090435-93d18d7e34b8
 	golang.org/x/vuln v1.1.3
-	honnef.co/go/tools v0.5.0
+	honnef.co/go/tools v0.5.1
 )
 
 require (

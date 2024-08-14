@@ -44,7 +44,6 @@ lint: fmt tidy vet staticcheck vuln
 	@printf "\nChecking for changed files...\n"
 	git status --porcelain
 	@printf "\n"
-	git diff go.mod go.sum
 	@if [[ "$${CI}" == "true" ]]; then $$(exit $$(git status --porcelain | wc -l)); fi
 
 # ____ test __________________________________________________________________
