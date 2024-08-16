@@ -51,6 +51,9 @@ func Response(ctx context.Context, w http.ResponseWriter, err error) {
 
 	logger := zerolog.Ctx(ctx)
 	switch {
+	case errors.Is(err, context.Canceled):
+		logger.Warn().Msg(err.Error())
+		return
 	case respErr.Status >= 500:
 		logger.Err(err).Msg("")
 	case respErr.Status >= 400:
