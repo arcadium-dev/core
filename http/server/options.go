@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/rs/cors"
-	"github.com/rs/zerolog"
 )
 
 type (
@@ -68,13 +67,6 @@ func WithWriteTimeout(timeout time.Duration) Option {
 func WithShutdownTimeout(timeout time.Duration) Option {
 	return newOption(func(s *Server) {
 		s.shutdownTimeout = timeout
-	})
-}
-
-// WithServerLogger provides a logger to the server.
-func WithLogger(logger *zerolog.Logger) Option {
-	return newOption(func(s *Server) {
-		s.logger = logger
 	})
 }
 

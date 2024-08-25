@@ -16,129 +16,62 @@ package ssh // import "arcadium.dev/core/ssh"
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
-	l "log"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"sync"
 	"syscall"
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/rs/cors"
 	"github.com/rs/zerolog"
 
 	"arcadium.dev/core/build"
+	"arcadium.dev/core/http/middleware"
 	"arcadium.dev/core/http/server"
 	"arcadium.dev/core/http/services"
 	"arcadium.dev/core/log"
 )
 
 type (
-	// Server represents the restful api server.
-	Server struct {
-		Stdout, Stderr io.Writer    // Provides a way for unit tests to capture output to standard file descriptors.
-		C              Constructors // Provides a way for unit tests to inject different object constructors.
+	// MultiprotocolServer ...
+	MultiprotocolServer struct {
+		LogLevel string
+
+		stdout io.Writer // Provides a way for unit tests to capture output to standard file descriptors.
 
 		interrupt chan os.Signal
-		wg        *sync.WaitGroup // To ensure stop isn't called before Start is ready.
 		ctx       context.Context
-
-		info   build.Information
-		cfg    Config
-		logger *zerolog.Logger
+		info      build.Information
+		logger    *zerolog.Logger
 	}
 
 	// Constructors provide a way to inject different functions to create server components.
 	Constructors struct {
-		NewConfig     func(...string) (Config, error)
-		NewLogger     func(Config) (*zerolog.Logger, error)
-		NewHTTPServer func(context.Context, Config) (*server.Server, error)
+		NewConfig func(...string) (Config, error)
+		NewLogger func(Config) (*zerolog.Logger, error)
+	}
+
+	// ProtocolServer ...
+	ProtocolServer interface {
+		Start(context.Context, build.Information)
+		Done() <-chan error
+		Shutdown(context.Context)
 	}
 )
 
-// NewServer returns a new restful api server.
-func NewServer(version, branch, commit, date string, mw ...mux.MiddlewareFunc) *Server {
-	name := filepath.Base(os.Args[0])
-
-	s := &Server{
+// New returns a new multiprotocol server.
+func NewServer(version, branch, commit, date string) *MultiprotocolServer {
+	return &MultiprotocolServer{
 		interrupt: make(chan os.Signal, 1),
-		wg:        &sync.WaitGroup{},
-		Stdout:    os.Stdout,
-		Stderr:    os.Stderr,
-		info:      build.Info(name, version, branch, commit, date),
+		stdout:    os.Stdout,
+		info:      build.Info(filepath.Base(os.Args[0]), version, branch, commit, date),
 	}
-
-	s.C.NewConfig = NewConfig
-
-	s.C.NewLogger = func(cfg Config) (*zerolog.Logger, error) {
-		return log.New(
-			log.AsDefault(),
-			log.WithLevel(log.ToLevel(cfg.LogLevel())),
-			log.WithOutput(s.Stdout),
-		)
-	}
-
-	s.C.NewHTTPServer = func(ctx context.Context, cfg Config) (*server.Server, error) {
-		var tlsConfig *tls.Config
-
-		// Setup HTTPS.
-		if cfg.TLSCert() != "" && cfg.TLSKey() != "" {
-			cert, err := tls.LoadX509KeyPair(cfg.TLSCert(), cfg.TLSKey())
-			if err != nil {
-				return nil, fmt.Errorf("failed to load tls certificate: %w", err)
-			}
-			tlsConfig = &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			}
-		}
-		if cfg.TLSCACert() != "" {
-			tlsConfig.ClientCAs = x509.NewCertPool()
-			caCert, err := os.ReadFile(cfg.TLSCACert())
-			if err != nil {
-				return nil, fmt.Errorf("failed to load the tls client CA certificate: %w", err)
-			}
-			tlsConfig.ClientCAs.AppendCertsFromPEM(caCert)
-		}
-
-		// Gather the server options.
-		var opts []server.Option
-		opts = append(opts,
-			server.WithAddr(cfg.HTTPServerAddr()),
-			server.WithTLS(tlsConfig),
-		)
-
-		// Setup CORS.
-		corsOpts := &cors.Options{}
-		if len(cfg.AllowedOrigins()) != 0 {
-			corsOpts.AllowedOrigins = cfg.AllowedOrigins()
-		}
-		if len(cfg.AllowedMethods()) != 0 {
-			corsOpts.AllowedMethods = cfg.AllowedMethods()
-		}
-		if len(cfg.AllowedHeaders()) != 0 {
-			corsOpts.AllowedHeaders = cfg.AllowedHeaders()
-		}
-		if len(corsOpts.AllowedOrigins) == 1 && corsOpts.AllowedOrigins[0] != "*" {
-			corsOpts.AllowCredentials = true
-		}
-		if len(corsOpts.AllowedOrigins) > 0 || len(corsOpts.AllowedMethods) > 0 || len(corsOpts.AllowedHeaders) > 0 {
-			opts = append(opts, server.WithCORS(corsOpts))
-		}
-
-		return server.New(ctx, opts...), nil
-	}
-
-	s.wg.Add(1)
-	return s
 }
 
 // Init initializes the server object.
-func (s *Server) Init(prefix ...string) error {
+func (s *MultiprotocolServer) Init(prefix ...string) error {
 	var (
 		err    error
 		cancel context.CancelFunc
@@ -150,24 +83,16 @@ func (s *Server) Init(prefix ...string) error {
 	signal.Notify(s.interrupt, syscall.SIGINT, syscall.SIGTERM)
 	go func() { <-s.interrupt; cancel() }()
 
-	// Setup a temporary logger.
-	lg := l.Default()
-	lg.SetOutput(s.Stdout)
-
-	// Load the config.
-	s.cfg, err = s.C.NewConfig(prefix...)
-	if err != nil {
-		lg.Printf("error: failed to load config: %s", err)
-		return fmt.Errorf("failed to load config: %w", err)
-	}
-
 	// Create a logger.
-	s.logger, err = s.C.NewLogger(s.cfg)
-	if err != nil {
-		lg.Printf("error: failed to create logger: %s", err)
+	if s.logger, err = log.New(log.AsDefault(), log.WithLevel(log.ToLevel(cfg.LogLevel())), log.WithOutput(s.Stdout)); err != nil {
 		return fmt.Errorf("failed to create logger: %w", err)
 	}
 	s.ctx = s.logger.WithContext(s.ctx)
+
+	// Create the http server.
+	if s.httpServer, err = s.C.NewHTTPServer(s.ctx, s.cfg); err != nil {
+		return fmt.Errorf("failed to create http server: %w", err)
+	}
 
 	s.logger.Info().Msgf("starting %s", s.info)
 
@@ -183,6 +108,15 @@ func (s Server) Start() error {
 	if s.cfg.PProfEnabled() {
 		svcs = append(svcs, services.PProf{})
 	}
+	s.server.Register(svcs...)
+
+	// Setup the http middleware.
+	mw := []mux.MiddlewareFunc{
+		middleware.Recover{Logger: s.logger}.Panics,
+		middleware.Logging{Logger: s.logger}.Requests,
+		middleware.Metrics,
+	}
+	server.Middleware(mw...)
 
 	// Create the http server.
 	httpServer, err := s.C.NewHTTPServer(s.ctx, s.cfg)

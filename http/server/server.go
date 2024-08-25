@@ -66,7 +66,7 @@ type (
 
 		// Shutdown allows the service to stop any long running background processes it
 		// may have.
-		Shutdown()
+		Shutdown(context.Context)
 	}
 
 	corsLogger struct {
@@ -148,8 +148,8 @@ func (s *Server) Register(services ...Service) {
 	}
 }
 
-// Serve accepts incoming connections, creating a new service goroutine for each. The
-// service goroutine reads requests and then call the handler to reply to them.
+// Serve accepts incoming connections. This is a blocking call and should be
+// called in the context of a new goroutime.
 func (s *Server) Serve() error {
 	var err error
 	if s.listener, err = net.Listen("tcp", s.addr); err != nil {
@@ -180,6 +180,7 @@ func (s *Server) Serve() error {
 }
 
 // Shutdown stops the http server gracefully without interrupting any active connections.
+// It will, however, forcefully stop if the shutdown timeout expires while shutting down.
 func (s *Server) Shutdown() {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(s.shutdownTimeout))
 	defer cancel()
@@ -187,7 +188,7 @@ func (s *Server) Shutdown() {
 	// Stop each service.
 	s.mu.RLock()
 	for _, service := range s.services {
-		service.Shutdown()
+		service.Shutdown(ctx)
 		s.logger.Info().Msgf("http service shutdown, service: %s", service.Name())
 	}
 	s.mu.RUnlock()

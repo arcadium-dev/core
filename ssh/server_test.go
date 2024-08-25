@@ -78,7 +78,6 @@ func setup(t *testing.T, prefix ...string) (*ssh.Server, *log.StringBuffer) {
 
 	b := log.NewStringBuffer()
 	s.Stdout = b
-	s.Stderr = b
 
 	p := ""
 	if len(prefix) == 1 {

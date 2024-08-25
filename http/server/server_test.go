@@ -304,7 +304,7 @@ func (m *mockService) Name() string {
 	return "mockService"
 }
 
-func (m *mockService) Shutdown() {
+func (m *mockService) Shutdown(context.Context) {
 	m.mu.Lock()
 	m.shutdown = true
 	m.mu.Unlock()

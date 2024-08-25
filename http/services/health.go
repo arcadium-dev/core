@@ -17,6 +17,7 @@
 package services // import "arcadium.dev/core/http/services"
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -80,7 +81,7 @@ func (Health) Name() string {
 }
 
 // Shutdown is a no-op since there no long running processes for this service.
-func (Health) Shutdown() {}
+func (Health) Shutdown(context.Context) {}
 
 func (h Health) get(w http.ResponseWriter, r *http.Request) {
 	resp := HealthResponse{}
