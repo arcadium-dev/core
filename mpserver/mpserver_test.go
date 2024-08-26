@@ -3,7 +3,6 @@ package mpserver_test
 import (
 	"context"
 	"errors"
-	"os"
 	"runtime"
 	"sync"
 	"testing"
@@ -42,7 +41,6 @@ func TestMPServer_New(t *testing.T) {
 			name: "success",
 			opts: []mpserver.Option{
 				mpserver.WithLogLevel("debug"),
-				mpserver.WithStdout(os.Stderr),
 				mpserver.WithShutdownTimeout(600 * time.Second),
 				mpserver.WithProtocolServer(mockProtocolServer{}, mockProtocolServer{}),
 			},
