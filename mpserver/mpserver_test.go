@@ -143,7 +143,7 @@ type (
 	}
 )
 
-func (m mockProtocolServer) Serve(context.Context, build.Information) error {
+func (m mockProtocolServer) Serve(context.Context) error {
 	return m.err
 }
 

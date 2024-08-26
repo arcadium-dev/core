@@ -15,6 +15,7 @@
 package services // import "arcadium.dev/core/http/services"
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -45,4 +46,4 @@ func (Metrics) Register(router *mux.Router) {
 func (Metrics) Name() string { return "metrics" }
 
 // Shutdown is a no-op since there are no long running processes.
-func (Metrics) Shutdown() {}
+func (Metrics) Shutdown(context.Context) {}

@@ -9,7 +9,6 @@ import (
 	"github.com/rs/cors"
 
 	"arcadium.dev/core/assert"
-	"arcadium.dev/core/log"
 )
 
 func TestWithAddr(t *testing.T) {
@@ -62,15 +61,4 @@ func TestWithShutdownTimeout(t *testing.T) {
 	WithShutdownTimeout(timeout).apply(s)
 
 	assert.Equal(t, s.shutdownTimeout, timeout)
-}
-
-func TestWithLogger(t *testing.T) {
-	s := &Server{}
-
-	logger, err := log.New()
-	assert.Nil(t, err)
-
-	WithLogger(logger).apply(s)
-
-	assert.Equal(t, s.logger, logger)
 }
