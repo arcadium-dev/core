@@ -50,7 +50,7 @@ type (
 	// ProtocolServer defines the behavior expended from a protocol server.
 	ProtocolServer interface {
 		// Serve starts the server. This will be run in its own go routine.
-		Serve(context.Context, build.Information) error
+		Serve(context.Context) error
 
 		// Shutdown a protocol server. Calling shutdown for a server that returns
 		// an erro from Serve must be a noop.
@@ -114,7 +114,7 @@ func (s *MultiprotocolServer) Serve() error {
 	result := make(chan error, len(s.servers))
 	for _, server := range s.servers {
 		go func() {
-			result <- server.Serve(s.ctx, s.info)
+			result <- server.Serve(s.ctx)
 		}()
 	}
 

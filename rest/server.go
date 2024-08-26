@@ -211,19 +211,19 @@ func (s Server) Start(extServices ...server.Service) error {
 	}
 	server.Middleware(mw...)
 
-	server.Register(svcs...)
+	server.Register(s.ctx, svcs...)
 
 	// Serve.
 	result := make(chan error, 1)
 	go func() {
 		s.wg.Done()
-		result <- server.Serve()
+		result <- server.Serve(s.ctx)
 	}()
 
 	select {
 	// Wait for an interrupt.
 	case <-s.ctx.Done():
-		server.Shutdown()
+		server.Shutdown(s.ctx)
 
 	// If the server failed to start,
 	case err = <-result:

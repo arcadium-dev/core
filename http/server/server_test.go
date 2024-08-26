@@ -49,7 +49,7 @@ func TestServerRegister(t *testing.T) {
 	m := &mockService{}
 	s := New(ctx)
 
-	s.Register(m)
+	s.Register(ctx, m)
 
 	if !m.registerCalled {
 		t.Errorf("Failed to call register")
@@ -186,15 +186,16 @@ func TestServerCORS(t *testing.T) {
 func TestServerServe(t *testing.T) {
 	t.Run("listen failure", func(t *testing.T) {
 		s := New(context.Background(), WithAddr(":-42"))
-		err := s.Serve()
+		err := s.Serve(context.Background())
 		assert.Contains(t, err.Error(), "failed to listen on address ':-42'")
 	})
 
 	t.Run("serve", func(t *testing.T) {
+		ctx := context.Background()
 		m := &mockService{}
 		s := New(context.Background(), WithAddr(":4242"))
 
-		s.Register(m)
+		s.Register(context.Background(), m)
 
 		assert.Equal(t, len(s.services), 1)
 		assert.Equal(t, s.services[0].Name(), "mockService")
@@ -202,16 +203,17 @@ func TestServerServe(t *testing.T) {
 		result := make(chan error, 1)
 		var wg sync.WaitGroup
 		wg.Add(1)
-		go func() { wg.Done(); result <- s.Serve() }()
+		go func() { wg.Done(); result <- s.Serve(ctx) }()
 		wg.Wait()
 
-		s.Shutdown()
+		s.Shutdown(ctx)
 		err := <-result
 
 		assert.Nil(t, err)
 	})
 
 	t.Run("serve with middleware", func(t *testing.T) {
+		ctx := context.Background()
 		m := &mockService{}
 
 		s := New(context.Background(), WithAddr(":4242"))
@@ -226,7 +228,7 @@ func TestServerServe(t *testing.T) {
 				next.ServeHTTP(w, r)
 			})
 		})
-		s.Register(m)
+		s.Register(ctx, m)
 
 		assert.Equal(t, len(s.services), 1)
 		assert.Equal(t, s.services[0].Name(), "mockService")
@@ -234,14 +236,14 @@ func TestServerServe(t *testing.T) {
 		result := make(chan error, 1)
 		var wg sync.WaitGroup
 		wg.Add(1)
-		go func() { wg.Done(); result <- s.Serve() }()
+		go func() { wg.Done(); result <- s.Serve(ctx) }()
 		wg.Wait()
 
 		req := httptest.NewRequest(http.MethodGet, "/boom", nil)
 		rw := httptest.NewRecorder()
 		s.router.ServeHTTP(rw, req)
 
-		s.Shutdown()
+		s.Shutdown(ctx)
 		err := <-result
 
 		assert.True(t, m.shutdownCalled())
@@ -249,10 +251,11 @@ func TestServerServe(t *testing.T) {
 	})
 
 	t.Run("serve tls", func(t *testing.T) {
+		ctx := context.Background()
 		tlsConfig := setupTLS(t, "./test/insecure_cert.pem", "./test/insecure_key.pem")
 		m := &mockService{}
 		s := New(context.Background(), WithTLS(tlsConfig), WithAddr(":2424"))
-		s.Register(m)
+		s.Register(ctx, m)
 
 		require.Equal(t, len(s.services), 1)
 		assert.Equal(t, s.services[0].Name(), "mockService")
@@ -260,10 +263,10 @@ func TestServerServe(t *testing.T) {
 		result := make(chan error, 1)
 		var wg sync.WaitGroup
 		wg.Add(1)
-		go func() { wg.Done(); result <- s.Serve() }()
+		go func() { wg.Done(); result <- s.Serve(ctx) }()
 		wg.Wait()
 
-		s.Shutdown()
+		s.Shutdown(ctx)
 		err := <-result
 
 		assert.True(t, m.shutdownCalled())
