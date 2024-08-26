@@ -43,8 +43,8 @@ import (
 type (
 	// Server represents the restful api server.
 	Server struct {
-		Stdout, Stderr io.Writer    // Provides a way for unit tests to capture output to standard file descriptors.
-		C              Constructors // Provides a way for unit tests to inject different object constructors.
+		Stdout io.Writer    // Provides a way for unit tests to capture output to standard file descriptors.
+		C      Constructors // Provides a way for unit tests to inject different object constructors.
 
 		interrupt chan os.Signal
 		wg        *sync.WaitGroup // To ensure stop isn't called before Start is ready.
@@ -72,7 +72,6 @@ func NewServer(version, branch, commit, date string, mw ...mux.MiddlewareFunc) *
 		interrupt: make(chan os.Signal, 1),
 		wg:        &sync.WaitGroup{},
 		Stdout:    os.Stdout,
-		Stderr:    os.Stderr,
 		info:      build.Info(name, version, branch, commit, date),
 		mw:        mw,
 	}
@@ -231,11 +230,6 @@ func (s Server) Start(extServices ...server.Service) error {
 		if err != nil {
 			s.logger.Err(err).Msg("failed to start http server")
 		}
-	}
-
-	// Shutdown the services.
-	for _, svc := range svcs {
-		svc.Shutdown(s.ctx)
 	}
 
 	return err

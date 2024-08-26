@@ -1,4 +1,4 @@
-package rest_test
+package ssh_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"arcadium.dev/core/http/server"
 	"arcadium.dev/core/log"
 	"arcadium.dev/core/require"
-	"arcadium.dev/core/rest"
+	"arcadium.dev/core/ssh"
 	"github.com/rs/zerolog"
 )
 
@@ -17,8 +17,8 @@ func TestServerInit(t *testing.T) {
 	t.Run("new config failure", func(t *testing.T) {
 		s, b := setup(t)
 
-		s.C.NewConfig = func(...string) (rest.Config, error) {
-			return rest.Config{}, errors.New("new config failure")
+		s.C.NewConfig = func(...string) (ssh.Config, error) {
+			return ssh.Config{}, errors.New("new config failure")
 		}
 
 		err := s.Init()
@@ -31,7 +31,7 @@ func TestServerInit(t *testing.T) {
 	t.Run("new logger failure", func(t *testing.T) {
 		s, b := setup(t)
 
-		s.C.NewLogger = func(rest.Config) (*zerolog.Logger, error) {
+		s.C.NewLogger = func(ssh.Config) (*zerolog.Logger, error) {
 			return nil, errors.New("new logger failure")
 		}
 
@@ -47,7 +47,7 @@ func TestServerStart(t *testing.T) {
 	t.Run("new http server failure", func(t *testing.T) {
 		s, b := setup(t)
 
-		s.C.NewHTTPServer = func(context.Context, rest.Config) (*server.Server, error) {
+		s.C.NewHTTPServer = func(context.Context, ssh.Config) (*server.Server, error) {
 			return nil, errors.New("new http server failure")
 		}
 
@@ -73,8 +73,8 @@ func TestServerStart(t *testing.T) {
 	})
 }
 
-func setup(t *testing.T, prefix ...string) (*rest.Server, *log.StringBuffer) {
-	s := rest.NewServer("version", "branch", "commit", "date")
+func setup(t *testing.T, prefix ...string) (*ssh.Server, *log.StringBuffer) {
+	s := ssh.NewServer("version", "branch", "commit", "date")
 
 	b := log.NewStringBuffer()
 	s.Stdout = b
@@ -84,8 +84,7 @@ func setup(t *testing.T, prefix ...string) (*rest.Server, *log.StringBuffer) {
 		p = prefix[0]
 	}
 
-	t.Setenv(p+"DSN", "root:password@tcp(mariadb:3306)/dbname")
-	t.Setenv(p+"SERVER_ADDR", ":8443")
+	t.Setenv(p+"HTTP_SERVER_ADDR", ":8443")
 	t.Setenv(p+"LOG_LEVEL", "debug")
 	t.Setenv(p+"TLS_CERT", "")
 	t.Setenv(p+"TLS_KEY", "")
