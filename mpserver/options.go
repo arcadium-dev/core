@@ -15,7 +15,6 @@
 package mpserver // import "arcadium.dev/core/mpserver"
 
 import (
-	"io"
 	"time"
 )
 
@@ -38,29 +37,24 @@ func (o option) apply(s *MultiprotocolServer) {
 	o.f(s)
 }
 
-// WithLogLevel ...
+// WithLogLevel sets the loglevel for the multiprotocol server.
 func WithLogLevel(logLevel string) Option {
 	return newOption(func(s *MultiprotocolServer) {
 		s.loglevel = logLevel
 	})
 }
 
-// WithProtocolServer ...
-func WithProtocolServer(pserver ProtocolServer) Option {
+// WithProtocolServer adds protocol servers to be managed.
+func WithProtocolServer(pserver ...ProtocolServer) Option {
 	return newOption(func(s *MultiprotocolServer) {
-		if pserver != nil {
-			s.servers = append(s.servers, pserver)
+		if len(pserver) > 0 {
+			s.servers = append(s.servers, pserver...)
 		}
 	})
 }
 
-// WithStdout ...
-func WithStdout(stdout io.Writer) Option {
-	return newOption(func(s *MultiprotocolServer) {
-		s.stdout = stdout
-	})
-}
-
+// WithShutdownTimeout defines the maximum amount of time allowed to gracefully
+// shutdown the protocol servers.
 func WithShutdownTimeout(d time.Duration) Option {
 	return newOption(func(s *MultiprotocolServer) {
 		s.shutdownTimeout = d

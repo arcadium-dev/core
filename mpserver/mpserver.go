@@ -139,8 +139,8 @@ func (s *MultiprotocolServer) Serve() error {
 	return err
 }
 
-// Stop halts the server.
-func (s MultiprotocolServer) Stop() {
+// Shutdown halts the server.
+func (s MultiprotocolServer) Shutdown() {
 	close(s.interrupt)
 }
 

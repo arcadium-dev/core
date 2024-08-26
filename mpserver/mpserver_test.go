@@ -2,8 +2,14 @@ package mpserver_test
 
 import (
 	"context"
+	"errors"
+	"os"
+	"runtime"
+	"sync"
 	"testing"
+	"time"
 
+	"arcadium.dev/core/assert"
 	"arcadium.dev/core/build"
 	"arcadium.dev/core/mpserver"
 	"arcadium.dev/core/require"
@@ -24,7 +30,38 @@ func TestMPServer_New(t *testing.T) {
 	}{
 		{
 			name: "log creation failure",
+			opts: []mpserver.Option{
+				mpserver.WithLogLevel("invalid log level"),
+			},
 			verify: func(t *testing.T, s *mpserver.MultiprotocolServer, err error) {
+				assert.Nil(t, s)
+				assert.Error(t, err, "failed to create logger: invalid level: 6")
+			},
+		},
+		{
+			name: "success",
+			opts: []mpserver.Option{
+				mpserver.WithLogLevel("debug"),
+				mpserver.WithStdout(os.Stderr),
+				mpserver.WithShutdownTimeout(600 * time.Second),
+				mpserver.WithProtocolServer(mockProtocolServer{}, mockProtocolServer{}),
+			},
+			verify: func(t *testing.T, s *mpserver.MultiprotocolServer, err error) {
+				assert.Nil(t, err)
+				require.NotNil(t, s)
+				assert.Equal(t, s.GetLogLevel(), "debug")
+				assert.Equal(t, s.GetShutdownTimeout(), 600*time.Second)
+				assert.Equal(t, len(s.GetServers()), 2)
+				assert.Equal(t, s.GetBuildInfo(), build.Information{
+					Name:    "mpserver.test",
+					Version: version,
+					Branch:  branch,
+					Commit:  commit,
+					Date:    date,
+					Go:      runtime.Version(),
+				})
+				assert.NotNil(t, s.GetInterrupt)
+				assert.NotNil(t, s.Ctx())
 			},
 		},
 	}
@@ -45,8 +82,28 @@ func TestMPServer_Serve(t *testing.T) {
 		verify func(t *testing.T, err error)
 	}{
 		{
-			name: "nothing to server failure",
+			name: "nothing to serve failure",
+			opts: []mpserver.Option{
+				mpserver.WithLogLevel("error"),
+				mpserver.WithShutdownTimeout(300 * time.Second),
+			},
 			verify: func(t *testing.T, err error) {
+				assert.Error(t, err, "exiting, nothing to server")
+			},
+		},
+		{
+			name: "protocol server fails to start",
+			opts: []mpserver.Option{
+				mpserver.WithLogLevel("error"),
+				mpserver.WithShutdownTimeout(1 * time.Second),
+				mpserver.WithProtocolServer(
+					mockProtocolServer{err: errors.New("failed to start, 1")},
+					mockProtocolServer{err: errors.New("failed to start, 2")},
+					mockProtocolServer{err: errors.New("failed to start, 3")},
+				),
+			},
+			verify: func(t *testing.T, err error) {
+				assert.Contains(t, err.Error(), "failed to start, ")
 			},
 		},
 	}
@@ -61,6 +118,25 @@ func TestMPServer_Serve(t *testing.T) {
 			test.verify(t, err)
 		})
 	}
+}
+
+func TestMPServer_Shutdown(t *testing.T) {
+	s, err := mpserver.New(version, branch, commit, date, mpserver.WithProtocolServer(
+		mockProtocolServer{},
+		mockProtocolServer{},
+		mockProtocolServer{},
+		mockProtocolServer{},
+	))
+	require.Nil(t, err)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		err = s.Serve()
+		assert.Nil(t, err)
+		wg.Done()
+	}()
+	s.Shutdown()
+	wg.Wait()
 }
 
 type (
