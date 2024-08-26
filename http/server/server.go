@@ -45,7 +45,6 @@ type (
 		corsOptions     *cors.Options
 		shutdownTimeout time.Duration
 
-		logger   *zerolog.Logger
 		listener net.Listener
 		server   *http.Server
 		router   *mux.Router
@@ -66,7 +65,7 @@ type (
 
 		// Shutdown allows the service to stop any long running background processes it
 		// may have.
-		Shutdown()
+		Shutdown(context.Context)
 	}
 
 	corsLogger struct {
@@ -80,9 +79,10 @@ func (c corsLogger) Printf(f string, v ...any) {
 
 // New creates an HTTP server with and has not started to accept requests yet.
 func New(ctx context.Context, opts ...Option) *Server {
+	logger := zerolog.Ctx(ctx)
+
 	s := &Server{
-		addr:   defaultAddr,
-		logger: zerolog.Ctx(ctx),
+		addr: defaultAddr,
 		server: &http.Server{
 			ReadTimeout:  defaultReadTimeout,
 			WriteTimeout: defaultWriteTimeout,
@@ -102,15 +102,15 @@ func New(ctx context.Context, opts ...Option) *Server {
 	// mux would try to route those requests.
 	var c *cors.Cors
 	if s.corsOptions == nil {
-		s.logger.Info().Msg("cors allow all")
+		logger.Info().Msg("cors allow all")
 		c = cors.AllowAll()
 	} else {
-		s.logger.Info().Msgf("cors allowed origins: %q", s.corsOptions.AllowedOrigins)
-		s.logger.Info().Msgf("cors allowed methods: %q", s.corsOptions.AllowedMethods)
-		s.logger.Info().Msgf("cors allowed headers: %q", s.corsOptions.AllowedHeaders)
+		logger.Info().Msgf("cors allowed origins: %q", s.corsOptions.AllowedOrigins)
+		logger.Info().Msgf("cors allowed methods: %q", s.corsOptions.AllowedMethods)
+		logger.Info().Msgf("cors allowed headers: %q", s.corsOptions.AllowedHeaders)
 		c = cors.New(*s.corsOptions)
 	}
-	c.Log = corsLogger{logger: s.logger}
+	c.Log = corsLogger{logger: logger}
 
 	s.server.Handler = c.Handler(s.router)
 
@@ -123,7 +123,7 @@ func New(ctx context.Context, opts ...Option) *Server {
 			tlsMsg = ", mtls: enabled"
 		}
 	}
-	s.logger.Info().Msgf("%s server created, address '%s'%s", s.scheme, s.addr, tlsMsg)
+	logger.Info().Msgf("%s server created, address '%s'%s", s.scheme, s.addr, tlsMsg)
 
 	return s
 }
@@ -136,7 +136,7 @@ func (s *Server) Middleware(mw ...mux.MiddlewareFunc) {
 }
 
 // Register associates the given services with the router.
-func (s *Server) Register(services ...Service) {
+func (s *Server) Register(ctx context.Context, services ...Service) {
 	s.mu.Lock()
 	s.services = append(s.services, services...)
 	s.mu.Unlock()
@@ -144,13 +144,13 @@ func (s *Server) Register(services ...Service) {
 	r := s.router.PathPrefix("/").Subrouter()
 	for _, service := range services {
 		service.Register(r)
-		s.logger.Info().Msgf("http service registered: %s", service.Name())
+		zerolog.Ctx(ctx).Info().Msgf("http service registered: %s", service.Name())
 	}
 }
 
-// Serve accepts incoming connections, creating a new service goroutine for each. The
-// service goroutine reads requests and then call the handler to reply to them.
-func (s *Server) Serve() error {
+// Serve accepts incoming connections. This is a blocking call and should be
+// called in the context of a new goroutime.
+func (s *Server) Serve(ctx context.Context) error {
 	var err error
 	if s.listener, err = net.Listen("tcp", s.addr); err != nil {
 		return fmt.Errorf("failed to listen on address '%s', %w", s.addr, err)
@@ -164,8 +164,8 @@ func (s *Server) Serve() error {
 	s.mu.RUnlock()
 	services := strings.Join(serviceNames, ",")
 
-	s.logger.Info().Msgf("begin serving %s, address '%s', services: %s", s.scheme, s.addr, services)
-	defer s.logger.Info().Msgf("serving %s complete, address '%s', services: %s", s.scheme, s.addr, services)
+	zerolog.Ctx(ctx).Info().Msgf("begin serving %s, address '%s', services: %s", s.scheme, s.addr, services)
+	defer zerolog.Ctx(ctx).Info().Msgf("serving %s complete, address '%s', services: %s", s.scheme, s.addr, services)
 
 	if s.server.TLSConfig != nil {
 		err = s.server.ServeTLS(s.listener, "", "")
@@ -180,22 +180,23 @@ func (s *Server) Serve() error {
 }
 
 // Shutdown stops the http server gracefully without interrupting any active connections.
-func (s *Server) Shutdown() {
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(s.shutdownTimeout))
+// It will, however, forcefully stop if the shutdown timeout expires while shutting down.
+func (s *Server) Shutdown(ctx context.Context) {
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(s.shutdownTimeout))
 	defer cancel()
 
 	// Stop each service.
 	s.mu.RLock()
 	for _, service := range s.services {
-		service.Shutdown()
-		s.logger.Info().Msgf("http service shutdown, service: %s", service.Name())
+		service.Shutdown(ctx)
+		zerolog.Ctx(ctx).Info().Msgf("http service shutdown, service: %s", service.Name())
 	}
 	s.mu.RUnlock()
 
 	// Stop the http server.
 	if err := s.server.Shutdown(ctx); err != nil {
-		s.logger.Err(err).Msg("failed to shutdown http server")
+		zerolog.Ctx(ctx).Err(err).Msg("failed to shutdown http server")
 	}
 
-	s.logger.Info().Msg("http server shutdown")
+	zerolog.Ctx(ctx).Info().Msg("http server shutdown")
 }

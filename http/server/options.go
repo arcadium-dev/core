@@ -1,4 +1,4 @@
-// Copyright 2021-2023 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2024 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/rs/cors"
-	"github.com/rs/zerolog"
 )
 
 type (
@@ -68,13 +67,6 @@ func WithWriteTimeout(timeout time.Duration) Option {
 func WithShutdownTimeout(timeout time.Duration) Option {
 	return newOption(func(s *Server) {
 		s.shutdownTimeout = timeout
-	})
-}
-
-// WithServerLogger provides a logger to the server.
-func WithLogger(logger *zerolog.Logger) Option {
-	return newOption(func(s *Server) {
-		s.logger = logger
 	})
 }
 

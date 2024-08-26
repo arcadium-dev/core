@@ -15,6 +15,7 @@
 package services // import "arcadium.dev/core/http/services"
 
 import (
+	"context"
 	"net/http"
 	_ "net/http/pprof"
 
@@ -40,4 +41,4 @@ func (PProf) Name() string {
 }
 
 // Shutdown is a no-op since there no long running processes for this service.
-func (PProf) Shutdown() {}
+func (PProf) Shutdown(context.Context) {}
