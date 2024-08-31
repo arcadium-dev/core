@@ -17,8 +17,6 @@ package rest // import "arcadium.dev/core/rest"
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
 	l "log"
@@ -88,38 +86,20 @@ func NewServer(version, branch, commit, date string, mw ...mux.MiddlewareFunc) *
 	}
 
 	s.C.NewHTTPServer = func(ctx context.Context, cfg Config) (*server.Server, error) {
-		var tlsConfig *tls.Config
-
-		// Setup HTTPS.
-		if cfg.TLSCert() != "" && cfg.TLSKey() != "" {
-			cert, err := tls.LoadX509KeyPair(cfg.TLSCert(), cfg.TLSKey())
-			if err != nil {
-				return nil, fmt.Errorf("failed to load tls certificate: %w", err)
-			}
-			tlsConfig = &tls.Config{
-				Certificates: []tls.Certificate{cert},
-			}
-		}
-
-		// Setup MTLS.
-		if cfg.MTLSEnabled() {
-			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-		}
-		if cfg.TLSCACert() != "" {
-			tlsConfig.ClientCAs = x509.NewCertPool()
-			caCert, err := os.ReadFile(cfg.TLSCACert())
-			if err != nil {
-				return nil, fmt.Errorf("failed to load the tls client CA certificate: %w", err)
-			}
-			tlsConfig.ClientCAs.AppendCertsFromPEM(caCert)
-		}
-
 		// Gather the server options.
 		var opts []server.Option
 		opts = append(opts,
 			server.WithAddr(cfg.ServerAddr()),
-			server.WithTLS(tlsConfig),
 		)
+
+		// Setup TLS.
+		if cfg.TLSCert() != "" && cfg.TLSKey() != "" {
+			opts = append(opts, server.WithTLSCert(cfg.TLSCert(), cfg.TLSKey()))
+			if cfg.TLSCACert() != "" {
+				opts = append(opts, server.WithTLSClientCACert(cfg.TLSCACert()))
+			}
+			opts = append(opts, server.WithMTLSEnabled(cfg.MTLSEnabled()))
+		}
 
 		// Setup CORS.
 		corsOpts := &cors.Options{}
@@ -136,10 +116,10 @@ func NewServer(version, branch, commit, date string, mw ...mux.MiddlewareFunc) *
 			corsOpts.AllowCredentials = true
 		}
 		if len(corsOpts.AllowedOrigins) > 0 || len(corsOpts.AllowedMethods) > 0 || len(corsOpts.AllowedHeaders) > 0 {
-			opts = append(opts, server.WithCORS(corsOpts))
+			opts = append(opts, server.WithCORSOptions(corsOpts))
 		}
 
-		return server.New(ctx, opts...), nil
+		return server.New(ctx, opts...)
 	}
 
 	s.wg.Add(1)
