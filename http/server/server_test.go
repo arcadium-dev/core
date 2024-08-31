@@ -1,4 +1,4 @@
-package server
+package server_test
 
 import (
 	"context"
@@ -7,47 +7,169 @@ import (
 	"net/http/httptest"
 	"sync"
 	"testing"
+	"time"
 
-	"arcadium.dev/core/assert"
-	"arcadium.dev/core/log"
-	"arcadium.dev/core/require"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+
+	"arcadium.dev/core/assert"
+	"arcadium.dev/core/http/server"
+	"arcadium.dev/core/log"
+	"arcadium.dev/core/require"
 )
 
-func TestServerNew(t *testing.T) {
-	t.Run("without options", func(t *testing.T) {
-		s := New(context.Background())
+func TestServer_New(t *testing.T) {
+	tests := []struct {
+		name   string
+		opts   []server.Option
+		verify func(*testing.T, *server.Server, error)
+	}{
+		// Test WithAddr option.
+		{
+			name: "with addr",
+			opts: []server.Option{server.WithAddr("10.11.12.13:4201")},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				assert.Equal(t, s.Addr(), "10.11.12.13:4201")
+			},
+		},
 
-		assert.Equal(t, s.addr, defaultAddr)
-		assert.Equal(t, s.shutdownTimeout, defaultShutdownTimeout)
-		assert.Equal(t, s.server.ReadTimeout, defaultReadTimeout)
-		assert.Equal(t, s.server.WriteTimeout, defaultWriteTimeout)
-	})
+		// Test WithTLS options.
+		{
+			name: "with tls config",
+			opts: []server.Option{server.WithTLSConfig(&tls.Config{})},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				require.NotNil(t, s)
+				assert.NotNil(t, s.TLSConfig())
+			},
+		},
+		{
+			name: "with tls cert, without tls key failure",
+			opts: []server.Option{server.WithTLSCert("./test/insecure_cert.pem", "")},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, s)
+				assert.Error(t, err, `the tls key must be defined with then tls cert is defined`)
+			},
+		},
+		{
+			name: "without tls cert, with tls key failure",
+			opts: []server.Option{server.WithTLSCert("", "./test/insecure_key.pem")},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, s)
+				assert.Error(t, err, `the tls cert must be defined with then tls key is defined`)
+			},
+		},
+		{
+			name: "with bad tls cert, tls key failure",
+			opts: []server.Option{server.WithTLSCert("./test/bad_cert.pem", "./test/bad_key.pem")},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, s)
+				assert.Error(t, err, `failed to load TLS certificate: open ./test/bad_cert.pem: no such file or directory`)
+			},
+		},
+		{
+			name: "with tls cert, with tls key, without client ca cert",
+			opts: []server.Option{server.WithTLSCert("./test/insecure_cert.pem", "./test/insecure_key.pem")},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				require.NotNil(t, s.TLSConfig())
+				assert.Equal(t, len(s.TLSConfig().Certificates), 1)
+				assert.Nil(t, s.TLSConfig().ClientCAs)
+				assert.Equal(t, s.TLSConfig().ClientAuth, tls.NoClientCert)
+			},
+		},
+		{
+			name: "with tls cert, with tls key, with client ca cert failure",
+			opts: []server.Option{
+				server.WithTLSCert("./test/insecure_cert.pem", "./test/insecure_key.pem"),
+				server.WithTLSClientCACert("./test/bad_rootCA.pem"),
+			},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, s)
+				assert.Error(t, err, `failed to load the TLS client CA certificate: open ./test/bad_rootCA.pem: no such file or directory`)
+			},
+		},
+		{
+			name: "with tls cert, with tls key failure, with client ca cert",
+			opts: []server.Option{
+				server.WithTLSCert("./test/insecure_cert.pem", "./test/insecure_key.pem"),
+				server.WithTLSClientCACert("./test/insecure_rootCA.pem"),
+			},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				require.NotNil(t, s.TLSConfig())
+				assert.Equal(t, len(s.TLSConfig().Certificates), 1)
+				assert.NotNil(t, s.TLSConfig().ClientCAs)
+				assert.Equal(t, s.TLSConfig().ClientAuth, tls.NoClientCert)
+			},
+		},
+		{
+			name: "with tls cert, with tls key failure, with client ca cert, with mtls enabled",
+			opts: []server.Option{
+				server.WithTLSCert("./test/insecure_cert.pem", "./test/insecure_key.pem"),
+				server.WithTLSClientCACert("./test/insecure_rootCA.pem"),
+				server.WithMTLSEnabled(true),
+			},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				require.NotNil(t, s.TLSConfig())
+				assert.Equal(t, len(s.TLSConfig().Certificates), 1)
+				assert.NotNil(t, s.TLSConfig().ClientCAs)
+				assert.Equal(t, s.TLSConfig().ClientAuth, tls.RequireAndVerifyClientCert)
+			},
+		},
 
-	t.Run("without tls", func(t *testing.T) {
-		ctx, b := log.SetupTestLogging(t)
-		New(ctx)
+		// Test WithCORSOptions option.
+		{
+			name: "with cors options",
+			opts: []server.Option{server.WithCORSOptions(&cors.Options{})},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				assert.NotNil(t, s.CORSOptions())
+			},
+		},
 
-		require.Equal(t, b.Len(), 2)
-		assert.Equal(t, b.Index(1), `{"severity":"info","message":"http server created, address ':8443'"}`+"\n")
-	})
+		// Test timeouts.
+		{
+			name: "defaults",
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				assert.Equal(t, s.ReadTimeout(), 5*time.Second)
+				assert.Equal(t, s.WriteTimeout(), 10*time.Second)
+				assert.Equal(t, s.ShutdownTimeout(), 10*time.Second)
+			},
+		},
+		{
+			name: "with timeouts",
+			opts: []server.Option{
+				server.WithReadTimeout(7 * time.Second),
+				server.WithWriteTimeout(13 * time.Second),
+				server.WithShutdownTimeout(111 * time.Second),
+			},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				assert.Equal(t, s.ReadTimeout(), 7*time.Second)
+				assert.Equal(t, s.WriteTimeout(), 13*time.Second)
+				assert.Equal(t, s.ShutdownTimeout(), 111*time.Second)
+			},
+		},
+	}
 
-	t.Run("with tls enabled", func(t *testing.T) {
-		ctx, b := log.SetupTestLogging(t)
-		cfg := setupTLS(t, "./test/insecure_cert.pem", "./test/insecure_key.pem")
-
-		New(ctx, WithTLS(cfg))
-
-		require.Equal(t, b.Len(), 2)
-		assert.Equal(t, b.Index(1), `{"severity":"info","message":"https server created, address ':8443', tls: enabled"}`+"\n")
-	})
+	for _, tt := range tests {
+		test := tt
+		t.Run(test.name, func(t *testing.T) {
+			s, err := server.New(context.Background(), test.opts...)
+			test.verify(t, s, err)
+		})
+	}
 }
 
-func TestServerRegister(t *testing.T) {
+func TestServer_Register(t *testing.T) {
 	ctx, b := log.SetupTestLogging(t)
 	m := &mockService{}
-	s := New(ctx)
+	s, err := server.New(ctx)
+	assert.Nil(t, err)
 
 	s.Register(ctx, m)
 
@@ -57,148 +179,150 @@ func TestServerRegister(t *testing.T) {
 
 	require.Equal(t, b.Len(), 3)
 	assert.Equal(t, b.Index(0), `{"severity":"info","message":"cors allow all"}`+"\n")
-	assert.Equal(t, b.Index(1), `{"severity":"info","message":"http server created, address ':8443'"}`+"\n")
+	assert.Equal(t, b.Index(1), `{"severity":"info","message":"http server created, address ':80'"}`+"\n")
 	assert.Equal(t, b.Index(2), `{"severity":"info","message":"http service registered: mockService"}`+"\n")
 
 	req := httptest.NewRequest(http.MethodGet, "/foo", nil)
 	rw := httptest.NewRecorder()
-	s.router.ServeHTTP(rw, req)
+	s.Router().ServeHTTP(rw, req)
 
 	assert.True(t, m.handlerCalled)
 	assert.Equal(t, rw.Code, http.StatusOK)
 }
 
-func TestServerCORS(t *testing.T) {
-	t.Run("preflight abort - origin", func(t *testing.T) {
-		s := New(context.Background(), WithCORS(&cors.Options{
-			AllowedOrigins: []string{"https://*.arcadium.dev"},
-			AllowedMethods: []string{"GET"},
-			AllowedHeaders: []string{"X-Requested-With", "Content-Type"},
-		}))
+func TestServer_CORS(t *testing.T) {
+	tests := []struct {
+		name    string
+		opt     *cors.Options
+		headers map[string]string
+		verify  func(t *testing.T, w *httptest.ResponseRecorder)
+	}{
+		{
+			name: "preflight abort - origin",
+			opt: &cors.Options{
+				AllowedOrigins: []string{"https://*.arcadium.dev"},
+				AllowedMethods: []string{"GET"},
+				AllowedHeaders: []string{"X-Requested-With", "Content-Type"},
+			},
+			headers: map[string]string{
+				"Origin":                         "http://www.arcadium.dev",
+				"Access-Control-Request-Method":  "GET",
+				"Access-Control-Request-Headers": "X-Requested-With,Content-Type",
+			},
+			verify: func(t *testing.T, w *httptest.ResponseRecorder) {
+				assert.Equal(t, w.Code, http.StatusNoContent)
+				acao := w.Header().Get("Access-Control-Allow-Origin")
+				assert.Equal(t, acao, "")
+				acam := w.Header().Get("Access-Control-Allow-Methods")
+				assert.Equal(t, acam, "")
+				acah := w.Header().Get("Access-Control-Allow-Headers")
+				assert.Equal(t, acah, "")
+			},
+		},
+		{
+			name: "preflight abort - method",
+			opt: &cors.Options{
+				AllowedOrigins: []string{"https://*.arcadium.dev"},
+				AllowedMethods: []string{"GET"},
+				AllowedHeaders: []string{"X-Requested-With", "Content-Type"},
+			},
+			headers: map[string]string{
+				"Origin":                         "http://www.arcadium.dev",
+				"Access-Control-Request-Method":  "PUT",
+				"Access-Control-Request-Headers": "X-Requested-With,Content-Type",
+			},
+			verify: func(t *testing.T, w *httptest.ResponseRecorder) {
+				assert.Equal(t, w.Code, http.StatusNoContent)
+				acao := w.Header().Get("Access-Control-Allow-Origin")
+				assert.Equal(t, acao, "")
+				acam := w.Header().Get("Access-Control-Allow-Methods")
+				assert.Equal(t, acam, "")
+				acah := w.Header().Get("Access-Control-Allow-Headers")
+				assert.Equal(t, acah, "")
+			},
+		},
+		{
+			name: "preflight abort - header",
+			opt: &cors.Options{
+				AllowedOrigins: []string{"https://*.arcadium.dev"},
+				AllowedMethods: []string{"GET"},
+				AllowedHeaders: []string{"X-Requested-With", "Content-Type"},
+			},
+			headers: map[string]string{
+				"Origin":                         "https://arcade.arcadium.dev",
+				"Access-Control-Request-Method":  "GET",
+				"Access-Control-Request-Headers": "X-Requested-With,Content-Type,x-okta-user-agent-extended",
+			},
+			verify: func(t *testing.T, w *httptest.ResponseRecorder) {
+				assert.Equal(t, w.Code, http.StatusNoContent)
+				acao := w.Header().Get("Access-Control-Allow-Origin")
+				assert.Equal(t, acao, "")
+				acam := w.Header().Get("Access-Control-Allow-Methods")
+				assert.Equal(t, acam, "")
+				acah := w.Header().Get("Access-Control-Allow-Headers")
+				assert.Equal(t, acah, "")
+			},
+		},
+		{
+			name: "success - default cors",
+			headers: map[string]string{
+				"Origin":                         "http://www.arcadium.dev",
+				"Access-Control-Request-Method":  "GET",
+				"Access-Control-Request-Headers": "X-Requested-With,Content-Type,X-Okta-User-Agent-Extended",
+			},
+			verify: func(t *testing.T, w *httptest.ResponseRecorder) {
+				assert.Equal(t, w.Code, http.StatusNoContent)
+				acao := w.Header().Get("Access-Control-Allow-Origin")
+				assert.Equal(t, acao, "*")
+				acam := w.Header().Get("Access-Control-Allow-Methods")
+				assert.Equal(t, acam, http.MethodGet)
+				acah := w.Header().Get("Access-Control-Allow-Headers")
+				assert.Equal(t, acah, "X-Requested-With,Content-Type,X-Okta-User-Agent-Extended")
+			},
+		},
+	}
 
-		r := httptest.NewRequest(http.MethodOptions, "/", nil)
-		w := httptest.NewRecorder()
+	for _, tt := range tests {
+		test := tt
+		t.Run(test.name, func(t *testing.T) {
+			s, err := server.New(context.Background(), server.WithCORSOptions(test.opt))
+			assert.Nil(t, err)
+			require.NotNil(t, s)
 
-		r.Header.Set("Origin", "http://www.arcadium.dev")
-		r.Header.Set("Access-Control-Request-Method", "GET")
-		r.Header.Set("Access-Control-Request-Headers", "X-Requested-With,Content-Type")
+			r := httptest.NewRequest(http.MethodOptions, "/", nil)
+			w := httptest.NewRecorder()
+			for key, value := range test.headers {
+				r.Header.Set(key, value)
+			}
+			s.Server().Handler.ServeHTTP(w, r)
 
-		s.server.Handler.ServeHTTP(w, r)
+			require.NotNil(t, w)
 
-		assert.Equal(t, w.Code, http.StatusNoContent)
-
-		acao := w.Header().Get("Access-Control-Allow-Origin")
-		assert.Equal(t, acao, "")
-
-		acam := w.Header().Get("Access-Control-Allow-Methods")
-		assert.Equal(t, acam, "")
-
-		acah := w.Header().Get("Access-Control-Allow-Headers")
-		assert.Equal(t, acah, "")
-	})
-
-	t.Run("preflight abort - method", func(t *testing.T) {
-		s := New(context.Background(), WithCORS(&cors.Options{
-			AllowedOrigins: []string{"https://*.arcadium.dev"},
-			AllowedMethods: []string{"GET"},
-			AllowedHeaders: []string{"X-Requested-With", "Content-Type"},
-		}))
-
-		r := httptest.NewRequest(http.MethodOptions, "/", nil)
-		w := httptest.NewRecorder()
-
-		r.Header.Set("Origin", "https://arcade.arcadium.dev")
-		r.Header.Set("Access-Control-Request-Method", "PUT")
-		r.Header.Set("Access-Control-Request-Headers", "X-Requested-With,Content-Type")
-
-		s.server.Handler.ServeHTTP(w, r)
-
-		assert.Equal(t, w.Code, http.StatusNoContent)
-
-		acao := w.Header().Get("Access-Control-Allow-Origin")
-		assert.Equal(t, acao, "")
-
-		acam := w.Header().Get("Access-Control-Allow-Methods")
-		assert.Equal(t, acam, "")
-
-		acah := w.Header().Get("Access-Control-Allow-Headers")
-		assert.Equal(t, acah, "")
-	})
-
-	t.Run("preflight abort - header", func(t *testing.T) {
-		s := New(context.Background(), WithCORS(&cors.Options{
-			AllowedOrigins: []string{"https://*.arcadium.dev"},
-			AllowedMethods: []string{"GET"},
-			AllowedHeaders: []string{"X-Requested-With", "Content-Type"},
-		}))
-
-		r := httptest.NewRequest(http.MethodOptions, "/", nil)
-		w := httptest.NewRecorder()
-
-		r.Header.Set("Origin", "https://arcade.arcadium.dev")
-		r.Header.Set("Access-Control-Request-Method", "GET")
-		r.Header.Set("Access-Control-Request-Headers", "X-Requested-With,Content-Type,x-okta-user-agent-extended")
-
-		s.server.Handler.ServeHTTP(w, r)
-
-		assert.Equal(t, w.Code, http.StatusNoContent)
-
-		acao := w.Header().Get("Access-Control-Allow-Origin")
-		assert.Equal(t, acao, "")
-
-		acam := w.Header().Get("Access-Control-Allow-Methods")
-		assert.Equal(t, acam, "")
-
-		acah := w.Header().Get("Access-Control-Allow-Headers")
-		assert.Equal(t, acah, "")
-	})
-
-	t.Run("success - default cors", func(t *testing.T) {
-		ctx, b := log.SetupTestLogging(t)
-		s := New(ctx)
-
-		require.Equal(t, b.Len(), 2)
-		assert.Equal(t, b.Index(0), `{"severity":"info","message":"cors allow all"}`+"\n")
-		assert.Equal(t, b.Index(1), `{"severity":"info","message":"http server created, address ':8443'"}`+"\n")
-
-		r := httptest.NewRequest(http.MethodOptions, "/", nil)
-		w := httptest.NewRecorder()
-
-		r.Header.Set("Origin", "http://www.arcadium.dev")
-		r.Header.Set("Access-Control-Request-Method", "GET")
-		r.Header.Set("Access-Control-Request-Headers", "X-Requested-With,Content-Type,X-Okta-User-Agent-Extended")
-
-		s.server.Handler.ServeHTTP(w, r)
-
-		assert.Equal(t, w.Code, http.StatusNoContent)
-
-		acao := w.Header().Get("Access-Control-Allow-Origin")
-		assert.Equal(t, acao, "*")
-
-		acam := w.Header().Get("Access-Control-Allow-Methods")
-		assert.Equal(t, acam, http.MethodGet)
-
-		acah := w.Header().Get("Access-Control-Allow-Headers")
-		assert.Equal(t, acah, "X-Requested-With,Content-Type,X-Okta-User-Agent-Extended")
-	})
+			t.Logf("%+v", test)
+			assert.NotNil(t, test.verify)
+			test.verify(t, w)
+		})
+	}
 }
 
-func TestServerServe(t *testing.T) {
+func TestServer_Serve(t *testing.T) {
 	t.Run("listen failure", func(t *testing.T) {
-		s := New(context.Background(), WithAddr(":-42"))
-		err := s.Serve(context.Background())
+		s, err := server.New(context.Background(), server.WithAddr(":-42"))
+		assert.Nil(t, err)
+		err = s.Serve(context.Background())
 		assert.Contains(t, err.Error(), "failed to listen on address ':-42'")
 	})
 
 	t.Run("serve", func(t *testing.T) {
 		ctx := context.Background()
 		m := &mockService{}
-		s := New(context.Background(), WithAddr(":4242"))
+		s, err := server.New(context.Background(), server.WithAddr(":4242"))
+		assert.Nil(t, err)
 
 		s.Register(context.Background(), m)
 
-		assert.Equal(t, len(s.services), 1)
-		assert.Equal(t, s.services[0].Name(), "mockService")
+		assert.Equal(t, len(s.Services()), 1)
+		assert.Equal(t, s.Services()[0].Name(), "mockService")
 
 		result := make(chan error, 1)
 		var wg sync.WaitGroup
@@ -207,7 +331,7 @@ func TestServerServe(t *testing.T) {
 		wg.Wait()
 
 		s.Shutdown(ctx)
-		err := <-result
+		err = <-result
 
 		assert.Nil(t, err)
 	})
@@ -216,7 +340,9 @@ func TestServerServe(t *testing.T) {
 		ctx := context.Background()
 		m := &mockService{}
 
-		s := New(context.Background(), WithAddr(":4242"))
+		s, err := server.New(context.Background(), server.WithAddr(":4242"))
+		assert.Nil(t, err)
+
 		s.Middleware(func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				defer func() {
@@ -230,8 +356,8 @@ func TestServerServe(t *testing.T) {
 		})
 		s.Register(ctx, m)
 
-		assert.Equal(t, len(s.services), 1)
-		assert.Equal(t, s.services[0].Name(), "mockService")
+		assert.Equal(t, len(s.Services()), 1)
+		assert.Equal(t, s.Services()[0].Name(), "mockService")
 
 		result := make(chan error, 1)
 		var wg sync.WaitGroup
@@ -241,10 +367,10 @@ func TestServerServe(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodGet, "/boom", nil)
 		rw := httptest.NewRecorder()
-		s.router.ServeHTTP(rw, req)
+		s.Router().ServeHTTP(rw, req)
 
 		s.Shutdown(ctx)
-		err := <-result
+		err = <-result
 
 		assert.True(t, m.shutdownCalled())
 		assert.Nil(t, err)
@@ -252,13 +378,17 @@ func TestServerServe(t *testing.T) {
 
 	t.Run("serve tls", func(t *testing.T) {
 		ctx := context.Background()
-		tlsConfig := setupTLS(t, "./test/insecure_cert.pem", "./test/insecure_key.pem")
 		m := &mockService{}
-		s := New(context.Background(), WithTLS(tlsConfig), WithAddr(":2424"))
+		s, err := server.New(
+			context.Background(),
+			server.WithAddr(":2424"),
+			server.WithTLSCert("./test/insecure_cert.pem", "./test/insecure_key.pem"),
+		)
+		assert.Nil(t, err)
 		s.Register(ctx, m)
 
-		require.Equal(t, len(s.services), 1)
-		assert.Equal(t, s.services[0].Name(), "mockService")
+		require.Equal(t, len(s.Services()), 1)
+		assert.Equal(t, s.Services()[0].Name(), "mockService")
 
 		result := make(chan error, 1)
 		var wg sync.WaitGroup
@@ -267,23 +397,11 @@ func TestServerServe(t *testing.T) {
 		wg.Wait()
 
 		s.Shutdown(ctx)
-		err := <-result
+		err = <-result
 
 		assert.True(t, m.shutdownCalled())
 		assert.Nil(t, err)
 	})
-}
-
-func setupTLS(t *testing.T, cert, key string) *tls.Config {
-	t.Helper()
-
-	certificate, err := tls.LoadX509KeyPair(cert, key)
-	require.Nil(t, err)
-
-	cfg := &tls.Config{}
-	cfg.Certificates = append(cfg.Certificates, certificate)
-
-	return cfg
 }
 
 type (
@@ -295,7 +413,7 @@ type (
 	}
 )
 
-var _ Service = (*mockService)(nil)
+var _ server.Service = (*mockService)(nil)
 
 func (m *mockService) Register(r *mux.Router) {
 	m.registerCalled = true

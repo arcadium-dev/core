@@ -35,15 +35,37 @@ func WithAddr(addr string) Option {
 	})
 }
 
-// WithTLS will configure the server to require TLS.
-func WithTLS(cfg *tls.Config) Option {
+// WithTLSCert provides the file name of the public TLS ceritificate.
+func WithTLSCert(cert, key string) Option {
 	return newOption(func(s *Server) {
-		s.server.TLSConfig = cfg
+		s.tlsCert = cert
+		s.tlsKey = key
 	})
 }
 
-// WithCORS will configure the server with the CORS options.
-func WithCORS(c *cors.Options) Option {
+// WithTLSClientCACert provides the file name of the client CA public certificate.
+func WithTLSClientCACert(cacert string) Option {
+	return newOption(func(s *Server) {
+		s.tlsCACert = cacert
+	})
+}
+
+// WithMTLSEnabled when set to true, enabled mutual TLS.
+func WithMTLSEnabled(enabled bool) Option {
+	return newOption(func(s *Server) {
+		s.mtlsEnabled = enabled
+	})
+}
+
+// WithTLSConfig will configure the server to require TLS.
+func WithTLSConfig(cfg *tls.Config) Option {
+	return newOption(func(s *Server) {
+		s.tlsConfig = cfg
+	})
+}
+
+// WithCORSOptions will configure the server with the CORS options.
+func WithCORSOptions(c *cors.Options) Option {
 	return newOption(func(s *Server) {
 		s.corsOptions = c
 	})
