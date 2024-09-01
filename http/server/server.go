@@ -58,8 +58,7 @@ type (
 		router   *mux.Router
 		scheme   string
 
-		mu       sync.RWMutex
-		services []Service
+		services *services
 	}
 
 	// Service defines the methods required by the Server to register with
@@ -76,6 +75,11 @@ type (
 		Shutdown(context.Context)
 	}
 
+	services struct {
+		mu       sync.RWMutex
+		services []Service
+	}
+
 	corsLogger struct {
 		logger *zerolog.Logger
 	}
@@ -83,6 +87,24 @@ type (
 
 func (c corsLogger) Printf(f string, v ...any) {
 	c.logger.Debug().Msgf(f, v...)
+}
+
+func (s *services) append(srv []Service) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.services = append(s.services, srv...)
+}
+
+func (s *services) len() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.services)
+}
+
+func (s *services) index(i int) Service {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.services[i]
 }
 
 // New creates an HTTP server with and has not started to accept requests yet.
@@ -98,6 +120,7 @@ func New(ctx context.Context, opts ...Option) (*Server, error) {
 		router:          mux.NewRouter(),
 		scheme:          "http",
 		shutdownTimeout: defaultShutdownTimeout,
+		services:        &services{},
 	}
 
 	// Load options.
@@ -201,9 +224,7 @@ func (s Server) Middleware(mw ...mux.MiddlewareFunc) {
 
 // Register associates the given services with the router.
 func (s *Server) Register(ctx context.Context, services ...Service) {
-	s.mu.Lock()
-	s.services = append(s.services, services...)
-	s.mu.Unlock()
+	s.services.append(services)
 
 	r := s.router.PathPrefix("/").Subrouter()
 	for _, service := range services {
@@ -221,11 +242,10 @@ func (s Server) Serve(ctx context.Context) error {
 	}
 
 	serviceNames := make([]string, 0)
-	s.mu.RLock()
-	for _, service := range s.services {
+	for i := 0; i < s.services.len(); i++ {
+		service := s.services.index(i)
 		serviceNames = append(serviceNames, service.Name())
 	}
-	s.mu.RUnlock()
 	services := strings.Join(serviceNames, ",")
 
 	zerolog.Ctx(ctx).Info().Msgf("begin serving %s, address '%s', services: %s", s.scheme, s.addr, services)
@@ -250,12 +270,11 @@ func (s Server) Shutdown(ctx context.Context) {
 	defer cancel()
 
 	// Stop each service.
-	s.mu.RLock()
-	for _, service := range s.services {
+	for i := 0; i < s.services.len(); i++ {
+		service := s.services.index(i)
 		service.Shutdown(ctx)
 		zerolog.Ctx(ctx).Info().Msgf("http service shutdown, service: %s", service.Name())
 	}
-	s.mu.RUnlock()
 
 	// Stop the http server.
 	if err := s.server.Shutdown(ctx); err != nil {

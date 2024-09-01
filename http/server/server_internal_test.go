@@ -16,6 +16,18 @@ func (s Server) ReadTimeout() time.Duration     { return s.server.ReadTimeout }
 func (s Server) WriteTimeout() time.Duration    { return s.server.WriteTimeout }
 func (s Server) ShutdownTimeout() time.Duration { return s.shutdownTimeout }
 
-func (s Server) Router() *mux.Router  { return s.router }
-func (s Server) Server() *http.Server { return s.server }
-func (s Server) Services() []Service  { return s.services }
+func (s Server) Router() *mux.Router {
+	return s.router
+}
+func (s Server) Server() *http.Server {
+	return s.server
+}
+
+type Services = services
+
+func (s Server) Services() *Services {
+	return s.services
+}
+
+func (s *Services) Len() int            { return s.len() }
+func (s *Services) Index(i int) Service { return s.index(i) }
