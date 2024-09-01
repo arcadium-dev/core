@@ -18,10 +18,11 @@ package server // import "arcadium.dev/core/http/server"
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net"
 	"net/http"
-	_ "net/http/pprof"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -32,7 +33,7 @@ import (
 )
 
 const (
-	defaultAddr            = ":8443"
+	defaultAddr            = ":80"
 	defaultReadTimeout     = 5 * time.Second
 	defaultWriteTimeout    = 10 * time.Second
 	defaultShutdownTimeout = 10 * time.Second
@@ -45,13 +46,18 @@ type (
 		corsOptions     *cors.Options
 		shutdownTimeout time.Duration
 
+		tlsCert     string
+		tlsKey      string
+		tlsCACert   string
+		mtlsEnabled bool
+		tlsConfig   *tls.Config
+
 		listener net.Listener
 		server   *http.Server
 		router   *mux.Router
 		scheme   string
 
-		mu       sync.RWMutex
-		services []Service
+		services *services
 	}
 
 	// Service defines the methods required by the Server to register with
@@ -68,6 +74,11 @@ type (
 		Shutdown(context.Context)
 	}
 
+	services struct {
+		mu       sync.RWMutex
+		services []Service
+	}
+
 	corsLogger struct {
 		logger *zerolog.Logger
 	}
@@ -77,8 +88,26 @@ func (c corsLogger) Printf(f string, v ...any) {
 	c.logger.Debug().Msgf(f, v...)
 }
 
+func (s *services) append(srv []Service) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.services = append(s.services, srv...)
+}
+
+func (s *services) len() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.services)
+}
+
+func (s *services) index(i int) Service {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.services[i]
+}
+
 // New creates an HTTP server with and has not started to accept requests yet.
-func New(ctx context.Context, opts ...Option) *Server {
+func New(ctx context.Context, opts ...Option) (*Server, error) {
 	logger := zerolog.Ctx(ctx)
 
 	s := &Server{
@@ -90,12 +119,82 @@ func New(ctx context.Context, opts ...Option) *Server {
 		router:          mux.NewRouter(),
 		scheme:          "http",
 		shutdownTimeout: defaultShutdownTimeout,
+		services:        &services{},
 	}
 
 	// Load options.
 	for _, opt := range opts {
 		opt.apply(s)
 	}
+
+	if err := s.setupTLS(ctx); err != nil {
+		return nil, err
+	}
+	s.setupCORS(ctx)
+
+	// Set up the logging fields.
+	tlsMsg := ""
+	if s.server.TLSConfig != nil {
+		s.scheme = "https"
+		tlsMsg = ", tls: enabled"
+		if s.server.TLSConfig.ClientAuth == tls.RequireAndVerifyClientCert {
+			tlsMsg = ", mtls: enabled"
+		}
+	}
+	logger.Info().Msgf("%s server created, address '%s'%s", s.scheme, s.addr, tlsMsg)
+
+	return s, nil
+}
+
+func (s *Server) setupTLS(ctx context.Context) error {
+	// If the entire tls.Config was given, prefer that.
+	if s.tlsConfig != nil {
+		if s.tlsCert != "" || s.tlsKey != "" || s.tlsCACert != "" {
+			zerolog.Ctx(ctx).Warn().Msg("both the TLS config and individual tls properties were defined, using TLS config")
+		}
+		s.server.TLSConfig = s.tlsConfig
+		return nil
+	}
+
+	// Ensure both tlsCert and tlsKey are defined when one is defined.
+	switch {
+	case s.tlsCert != "" && s.tlsKey == "":
+		return fmt.Errorf("the tls key must be defined with then tls cert is defined")
+	case s.tlsCert == "" && s.tlsKey != "":
+		return fmt.Errorf("the tls cert must be defined with then tls key is defined")
+	}
+
+	var tlsConfig *tls.Config
+	if s.tlsCert != "" && s.tlsKey != "" {
+		// Setup cert used for HTTPS.
+		cert, err := tls.LoadX509KeyPair(s.tlsCert, s.tlsKey)
+		if err != nil {
+			return fmt.Errorf("failed to load TLS certificate: %w", err)
+		}
+		tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
+
+		// Setup the client CA cert if available.
+		if s.tlsCACert != "" {
+			tlsConfig.ClientCAs = x509.NewCertPool()
+			clientCACert, err := os.ReadFile(s.tlsCACert)
+			if err != nil {
+				return fmt.Errorf("failed to load the TLS client CA certificate: %w", err)
+			}
+			tlsConfig.ClientCAs.AppendCertsFromPEM(clientCACert)
+		}
+
+		// Setup MTLS if enabled.
+		if s.mtlsEnabled {
+			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+		}
+	}
+	s.server.TLSConfig = tlsConfig
+
+	return nil
+}
+
+func (s *Server) setupCORS(ctx context.Context) {
+	logger := zerolog.Ctx(ctx)
 
 	// The CORS handler needs to be invoked before the mux so that the CORS handler
 	// can handle preflight requests before they would hit the mux. Otherwise the
@@ -113,23 +212,10 @@ func New(ctx context.Context, opts ...Option) *Server {
 	c.Log = corsLogger{logger: logger}
 
 	s.server.Handler = c.Handler(s.router)
-
-	// Set up the logging fields.
-	tlsMsg := ""
-	if s.server.TLSConfig != nil {
-		s.scheme = "https"
-		tlsMsg = ", tls: enabled"
-		if s.server.TLSConfig.ClientAuth == tls.RequireAndVerifyClientCert {
-			tlsMsg = ", mtls: enabled"
-		}
-	}
-	logger.Info().Msgf("%s server created, address '%s'%s", s.scheme, s.addr, tlsMsg)
-
-	return s
 }
 
 // Middleware installs the given middleware with the router.
-func (s *Server) Middleware(mw ...mux.MiddlewareFunc) {
+func (s Server) Middleware(mw ...mux.MiddlewareFunc) {
 	if len(mw) > 0 {
 		s.router.Use(mw...)
 	}
@@ -137,9 +223,7 @@ func (s *Server) Middleware(mw ...mux.MiddlewareFunc) {
 
 // Register associates the given services with the router.
 func (s *Server) Register(ctx context.Context, services ...Service) {
-	s.mu.Lock()
-	s.services = append(s.services, services...)
-	s.mu.Unlock()
+	s.services.append(services)
 
 	r := s.router.PathPrefix("/").Subrouter()
 	for _, service := range services {
@@ -150,18 +234,17 @@ func (s *Server) Register(ctx context.Context, services ...Service) {
 
 // Serve accepts incoming connections. This is a blocking call and should be
 // called in the context of a new goroutime.
-func (s *Server) Serve(ctx context.Context) error {
+func (s Server) Serve(ctx context.Context) error {
 	var err error
 	if s.listener, err = net.Listen("tcp", s.addr); err != nil {
 		return fmt.Errorf("failed to listen on address '%s', %w", s.addr, err)
 	}
 
 	serviceNames := make([]string, 0)
-	s.mu.RLock()
-	for _, service := range s.services {
+	for i := 0; i < s.services.len(); i++ {
+		service := s.services.index(i)
 		serviceNames = append(serviceNames, service.Name())
 	}
-	s.mu.RUnlock()
 	services := strings.Join(serviceNames, ",")
 
 	zerolog.Ctx(ctx).Info().Msgf("begin serving %s, address '%s', services: %s", s.scheme, s.addr, services)
@@ -181,17 +264,16 @@ func (s *Server) Serve(ctx context.Context) error {
 
 // Shutdown stops the http server gracefully without interrupting any active connections.
 // It will, however, forcefully stop if the shutdown timeout expires while shutting down.
-func (s *Server) Shutdown(ctx context.Context) {
+func (s Server) Shutdown(ctx context.Context) {
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(s.shutdownTimeout))
 	defer cancel()
 
 	// Stop each service.
-	s.mu.RLock()
-	for _, service := range s.services {
+	for i := 0; i < s.services.len(); i++ {
+		service := s.services.index(i)
 		service.Shutdown(ctx)
 		zerolog.Ctx(ctx).Info().Msgf("http service shutdown, service: %s", service.Name())
 	}
-	s.mu.RUnlock()
 
 	// Stop the http server.
 	if err := s.server.Shutdown(ctx); err != nil {
