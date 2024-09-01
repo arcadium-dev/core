@@ -35,7 +35,7 @@ func WithAddr(addr string) Option {
 	})
 }
 
-// WithTLSCert provides the file name of the public TLS ceritificate.
+// WithTLSCert provides the file name of the public TLS certificate and key.
 func WithTLSCert(cert, key string) Option {
 	return newOption(func(s *Server) {
 		s.tlsCert = cert
