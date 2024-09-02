@@ -44,6 +44,12 @@ func TestServer_New(t *testing.T) {
 				assert.NotNil(t, s.TLSConfig())
 			},
 		},
+		/*
+			{
+				name: "with tls config, and tls properties",
+				// TODO
+			},
+		*/
 		{
 			name: "with tls cert, without tls key failure",
 			opts: []server.Option{server.WithTLSCert("./test/insecure_cert.pem", "")},
@@ -129,6 +135,20 @@ func TestServer_New(t *testing.T) {
 				assert.NotNil(t, s.CORSOptions())
 			},
 		},
+		/*
+			{
+				name: "with cors options and cors properties failure",
+				// TODO
+			},
+			{
+				name: "with cors properties",
+				// TODO
+			},
+			{
+				name: "with cors properties - allow credentials",
+				// TODO
+			},
+		*/
 
 		// Test timeouts.
 		{

@@ -43,14 +43,18 @@ type (
 	// Server represents an HTTP server.
 	Server struct {
 		addr            string
-		corsOptions     *cors.Options
 		shutdownTimeout time.Duration
 
+		tlsConfig   *tls.Config
 		tlsCert     string
 		tlsKey      string
 		tlsCACert   string
 		mtlsEnabled bool
-		tlsConfig   *tls.Config
+
+		corsOptions        *cors.Options
+		corsAllowedOrigins []string
+		corsAllowedMethods []string
+		corsAllowedHeaders []string
 
 		listener net.Listener
 		server   *http.Server
@@ -194,20 +198,50 @@ func (s *Server) setupTLS(ctx context.Context) error {
 }
 
 func (s *Server) setupCORS(ctx context.Context) {
+	if s.corsOptions != nil {
+		if len(s.corsAllowedOrigins) > 0 || len(s.corsAllowedMethods) > 0 || len(s.corsAllowedHeaders) > 0 {
+			zerolog.Ctx(ctx).Warn().Msg("both the cors options and individual cors properties were defined, using cors options")
+		}
+		s.finishCORS(ctx, s.corsOptions)
+		return
+	}
+
+	if len(s.corsAllowedOrigins) == 0 && len(s.corsAllowedMethods) == 0 && len(s.corsAllowedHeaders) == 0 {
+		s.finishCORS(ctx, nil)
+		return
+	}
+
+	corsOpts := &cors.Options{}
+	if len(s.corsAllowedOrigins) > 0 {
+		corsOpts.AllowedOrigins = s.corsAllowedOrigins
+	}
+	if len(s.corsAllowedMethods) > 0 {
+		corsOpts.AllowedMethods = s.corsAllowedMethods
+	}
+	if len(s.corsAllowedHeaders) > 0 {
+		corsOpts.AllowedHeaders = s.corsAllowedHeaders
+	}
+	if len(corsOpts.AllowedOrigins) == 1 && corsOpts.AllowedOrigins[0] != "*" {
+		corsOpts.AllowCredentials = true
+	}
+	s.finishCORS(ctx, corsOpts)
+}
+
+func (s *Server) finishCORS(ctx context.Context, opts *cors.Options) {
 	logger := zerolog.Ctx(ctx)
 
 	// The CORS handler needs to be invoked before the mux so that the CORS handler
 	// can handle preflight requests before they would hit the mux. Otherwise the
 	// mux would try to route those requests.
 	var c *cors.Cors
-	if s.corsOptions == nil {
+	if opts == nil {
 		logger.Info().Msg("cors allow all")
 		c = cors.AllowAll()
 	} else {
-		logger.Info().Msgf("cors allowed origins: %q", s.corsOptions.AllowedOrigins)
-		logger.Info().Msgf("cors allowed methods: %q", s.corsOptions.AllowedMethods)
-		logger.Info().Msgf("cors allowed headers: %q", s.corsOptions.AllowedHeaders)
-		c = cors.New(*s.corsOptions)
+		logger.Info().Msgf("cors allowed origins: %q", opts.AllowedOrigins)
+		logger.Info().Msgf("cors allowed methods: %q", opts.AllowedMethods)
+		logger.Info().Msgf("cors allowed headers: %q", opts.AllowedHeaders)
+		c = cors.New(*opts)
 	}
 	c.Log = corsLogger{logger: logger}
 

@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/http/server"
@@ -31,14 +32,20 @@ func TestNewConfig(t *testing.T) {
 		expectedAllowedOrigins := []string{"https://arcade.arcadium.dev"}
 		expectedAllowedMethods := []string{"GET", "OPTIONS"}
 		expectedAllowedHeaders := []string{"content-type", "x-okta-user-agent-extended"}
+		expectedReadTimeout := 7 * time.Second
+		expectedWriteTimeout := 13 * time.Second
+		expectedShutdownTimeout := 111 * time.Second
 
+		t.Setenv("SERVER_ADDR", expectedServerAddr)
 		t.Setenv("TLS_CERT", expectedTLSCert)
 		t.Setenv("TLS_KEY", expectedTLSKey)
 		t.Setenv("MTLS_ENABLED", expectedMTLSEnabled)
-		t.Setenv("SERVER_ADDR", expectedServerAddr)
 		t.Setenv("ALLOWED_ORIGINS", strings.Join(expectedAllowedOrigins, ", "))
 		t.Setenv("ALLOWED_METHODS", strings.Join(expectedAllowedMethods, ", "))
 		t.Setenv("ALLOWED_HEADERS", strings.Join(expectedAllowedHeaders, ", "))
+		t.Setenv("READ_TIMEOUT", expectedReadTimeout.String())
+		t.Setenv("WRITE_TIMEOUT", expectedWriteTimeout.String())
+		t.Setenv("SHUTDOWN_TIMEOUT", expectedShutdownTimeout.String())
 
 		cfg, err := server.NewConfig()
 
@@ -49,5 +56,8 @@ func TestNewConfig(t *testing.T) {
 		assert.Compare(t, cfg.AllowedOrigins(), expectedAllowedOrigins)
 		assert.Compare(t, cfg.AllowedMethods(), expectedAllowedMethods)
 		assert.Compare(t, cfg.AllowedHeaders(), expectedAllowedHeaders)
+		assert.Equal(t, cfg.ReadTimeout(), expectedReadTimeout)
+		assert.Equal(t, cfg.WriteTimeout(), expectedWriteTimeout)
+		assert.Equal(t, cfg.ShutdownTimeout(), expectedShutdownTimeout)
 	})
 }

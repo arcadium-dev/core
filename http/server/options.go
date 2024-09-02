@@ -71,6 +71,27 @@ func WithCORSOptions(c *cors.Options) Option {
 	})
 }
 
+// With CORSAllowedOrigins will configure the CORS allowed origins.
+func WithCORSAllowedOrigins(origins []string) Option {
+	return newOption(func(s *Server) {
+		s.corsAllowedOrigins = origins
+	})
+}
+
+// With CORSAllowedMethods will configure the CORS allowed methods.
+func WithCORSAllowedMethods(methods []string) Option {
+	return newOption(func(s *Server) {
+		s.corsAllowedMethods = methods
+	})
+}
+
+// With CORSAllowedHeaders will configure the CORS allowed headers.
+func WithCORSAllowedHeaders(headers []string) Option {
+	return newOption(func(s *Server) {
+		s.corsAllowedHeaders = headers
+	})
+}
+
 // WithReadTimeout sets the http server read timeout.
 func WithReadTimeout(timeout time.Duration) Option {
 	return newOption(func(s *Server) {
