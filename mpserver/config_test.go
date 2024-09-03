@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewConfig(t *testing.T) {
-	for _, env := range []string{"DSN", "LOG_LEVEL"} {
+	for _, env := range []string{"LOG_LEVEL", "SHUTDOWN_TIMEOUT"} {
 		os.Unsetenv(env)
 	}
 
