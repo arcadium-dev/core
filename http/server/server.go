@@ -43,14 +43,18 @@ type (
 	// Server represents an HTTP server.
 	Server struct {
 		addr            string
-		corsOptions     *cors.Options
 		shutdownTimeout time.Duration
 
+		tlsConfig   *tls.Config
 		tlsCert     string
 		tlsKey      string
 		tlsCACert   string
 		mtlsEnabled bool
-		tlsConfig   *tls.Config
+
+		corsOptions        *cors.Options
+		corsAllowedOrigins []string
+		corsAllowedMethods []string
+		corsAllowedHeaders []string
 
 		listener net.Listener
 		server   *http.Server
@@ -194,6 +198,36 @@ func (s *Server) setupTLS(ctx context.Context) error {
 }
 
 func (s *Server) setupCORS(ctx context.Context) {
+	if s.corsOptions != nil {
+		if len(s.corsAllowedOrigins) > 0 || len(s.corsAllowedMethods) > 0 || len(s.corsAllowedHeaders) > 0 {
+			zerolog.Ctx(ctx).Warn().Msg("both the cors options and individual cors properties were defined, using cors options")
+		}
+		s.finishCORS(ctx)
+		return
+	}
+
+	if len(s.corsAllowedOrigins) == 0 && len(s.corsAllowedMethods) == 0 && len(s.corsAllowedHeaders) == 0 {
+		s.finishCORS(ctx)
+		return
+	}
+
+	s.corsOptions = &cors.Options{}
+	if len(s.corsAllowedOrigins) > 0 {
+		s.corsOptions.AllowedOrigins = s.corsAllowedOrigins
+	}
+	if len(s.corsAllowedMethods) > 0 {
+		s.corsOptions.AllowedMethods = s.corsAllowedMethods
+	}
+	if len(s.corsAllowedHeaders) > 0 {
+		s.corsOptions.AllowedHeaders = s.corsAllowedHeaders
+	}
+	if len(s.corsOptions.AllowedOrigins) == 1 && s.corsOptions.AllowedOrigins[0] != "*" {
+		s.corsOptions.AllowCredentials = true
+	}
+	s.finishCORS(ctx)
+}
+
+func (s *Server) finishCORS(ctx context.Context) {
 	logger := zerolog.Ctx(ctx)
 
 	// The CORS handler needs to be invoked before the mux so that the CORS handler

@@ -45,6 +45,18 @@ func TestServer_New(t *testing.T) {
 			},
 		},
 		{
+			name: "with tls config, and tls properties",
+			opts: []server.Option{
+				server.WithTLSConfig(&tls.Config{}),
+				server.WithTLSCert("./test/bad_cert.pem", "./test/bad_key.pem"),
+			},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				require.NotNil(t, s)
+				assert.NotNil(t, s.TLSConfig())
+			},
+		},
+		{
 			name: "with tls cert, without tls key failure",
 			opts: []server.Option{server.WithTLSCert("./test/insecure_cert.pem", "")},
 			verify: func(t *testing.T, s *server.Server, err error) {
@@ -126,7 +138,56 @@ func TestServer_New(t *testing.T) {
 			opts: []server.Option{server.WithCORSOptions(&cors.Options{})},
 			verify: func(t *testing.T, s *server.Server, err error) {
 				assert.Nil(t, err)
+				require.NotNil(t, s)
 				assert.NotNil(t, s.CORSOptions())
+			},
+		},
+		{
+			name: "with cors options and cors properties failure",
+			opts: []server.Option{
+				server.WithCORSOptions(&cors.Options{}),
+				server.WithCORSAllowedOrigins([]string{"*.arcadium.dev"}),
+			},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				require.NotNil(t, s)
+				assert.NotNil(t, s.CORSOptions())
+			},
+		},
+		{
+			name: "with cors properties",
+			opts: []server.Option{
+				server.WithCORSAllowedOrigins([]string{"*"}),
+				server.WithCORSAllowedMethods([]string{"GET"}),
+				server.WithCORSAllowedHeaders([]string{"X-Requested-With", "Content-Type"}),
+			},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				require.NotNil(t, s)
+				opts := s.CORSOptions()
+				require.NotNil(t, opts)
+				assert.Compare(t, opts.AllowedOrigins, []string{"*"})
+				assert.Compare(t, opts.AllowedMethods, []string{"GET"})
+				assert.Compare(t, opts.AllowedHeaders, []string{"X-Requested-With", "Content-Type"})
+				assert.False(t, opts.AllowCredentials)
+			},
+		},
+		{
+			name: "with cors properties - allow credentials",
+			opts: []server.Option{
+				server.WithCORSAllowedOrigins([]string{"arcadium.dev"}),
+				server.WithCORSAllowedMethods([]string{"GET"}),
+				server.WithCORSAllowedHeaders([]string{"X-Requested-With", "Content-Type"}),
+			},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				require.NotNil(t, s)
+				opts := s.CORSOptions()
+				require.NotNil(t, opts)
+				assert.Compare(t, opts.AllowedOrigins, []string{"arcadium.dev"})
+				assert.Compare(t, opts.AllowedMethods, []string{"GET"})
+				assert.Compare(t, opts.AllowedHeaders, []string{"X-Requested-With", "Content-Type"})
+				assert.True(t, opts.AllowCredentials)
 			},
 		},
 

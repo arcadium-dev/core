@@ -17,6 +17,7 @@ package server // import "arcadium.dev/http/server"
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -24,28 +25,34 @@ import (
 type (
 	// Config holds the configuration information for the restful api server.
 	Config struct {
-		serverAddr     string
-		tlsCert        string
-		tlsKey         string
-		tlsCACert      string
-		mtlsEnabled    bool
-		allowedOrigins []string
-		allowedMethods []string
-		allowedHeaders []string
+		serverAddr      string
+		tlsCert         string
+		tlsKey          string
+		tlsCACert       string
+		mtlsEnabled     bool
+		allowedOrigins  []string
+		allowedMethods  []string
+		allowedHeaders  []string
+		readTimeout     time.Duration
+		writeTimeout    time.Duration
+		shutdownTimeout time.Duration
 	}
 )
 
 // NewConfig returns the configuration of restful api server.
 func NewConfig(prefix ...string) (Config, error) {
 	cfg := struct {
-		ServerAddr     string `required:"true" split_words:"true"`
-		TlsCert        string `split_words:"true"`
-		TlsKey         string `split_words:"true"`
-		TlsCacert      string `split_words:"true"`
-		MtlsEnabled    bool   `split_words:"true"`
-		AllowedOrigins string `split_words:"true"`
-		AllowedMethods string `split_words:"true"`
-		AllowedHeaders string `split_words:"true"`
+		ServerAddr      string        `required:"true" split_words:"true"`
+		TlsCert         string        `split_words:"true"`
+		TlsKey          string        `split_words:"true"`
+		TlsCacert       string        `split_words:"true"`
+		MtlsEnabled     bool          `split_words:"true"`
+		AllowedOrigins  string        `split_words:"true"`
+		AllowedMethods  string        `split_words:"true"`
+		AllowedHeaders  string        `split_words:"true"`
+		ReadTimeout     time.Duration `split_words:"true"`
+		WriteTimeout    time.Duration `split_words:"true"`
+		ShutdownTimeout time.Duration `split_words:"true"`
 	}{}
 
 	pfix := ""
@@ -57,11 +64,14 @@ func NewConfig(prefix ...string) (Config, error) {
 	}
 
 	c := Config{
-		tlsCert:     strings.TrimSpace(cfg.TlsCert),
-		tlsKey:      strings.TrimSpace(cfg.TlsKey),
-		tlsCACert:   strings.TrimSpace(cfg.TlsCacert),
-		mtlsEnabled: cfg.MtlsEnabled,
-		serverAddr:  strings.TrimSpace(cfg.ServerAddr),
+		serverAddr:      strings.TrimSpace(cfg.ServerAddr),
+		tlsCert:         strings.TrimSpace(cfg.TlsCert),
+		tlsKey:          strings.TrimSpace(cfg.TlsKey),
+		tlsCACert:       strings.TrimSpace(cfg.TlsCacert),
+		mtlsEnabled:     cfg.MtlsEnabled,
+		readTimeout:     cfg.ReadTimeout,
+		writeTimeout:    cfg.WriteTimeout,
+		shutdownTimeout: cfg.ShutdownTimeout,
 	}
 
 	origins := strings.TrimSpace(cfg.AllowedOrigins)
@@ -86,6 +96,11 @@ func NewConfig(prefix ...string) (Config, error) {
 	return c, nil
 }
 
+// ServerAddr returns the network address the server will listen on.
+func (c Config) ServerAddr() string {
+	return c.serverAddr
+}
+
 // TLSCert returns the path of the certificate file.
 func (c Config) TLSCert() string {
 	return c.tlsCert
@@ -106,11 +121,6 @@ func (c Config) MTLSEnabled() bool {
 	return c.mtlsEnabled
 }
 
-// ServerAddr returns the network address the server will listen on.
-func (c Config) ServerAddr() string {
-	return c.serverAddr
-}
-
 // AllowedOrigins returns a string of Allowed Origins passed to the CORS middleware.
 func (c Config) AllowedOrigins() []string {
 	return c.allowedOrigins
@@ -124,4 +134,19 @@ func (c Config) AllowedMethods() []string {
 // AllowedHeaders returns a string of Allowed Headers passed to the CORS middleware.
 func (c Config) AllowedHeaders() []string {
 	return c.allowedHeaders
+}
+
+// ReadTimeout returns the server read timeout.
+func (c Config) ReadTimeout() time.Duration {
+	return c.readTimeout
+}
+
+// WriteTimeout returns the server write timeout.
+func (c Config) WriteTimeout() time.Duration {
+	return c.writeTimeout
+}
+
+// ShutdownTimeout returns the server shutdown timeout.
+func (c Config) ShutdownTimeout() time.Duration {
+	return c.shutdownTimeout
 }
