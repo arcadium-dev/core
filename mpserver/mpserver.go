@@ -59,15 +59,15 @@ type (
 )
 
 const (
-	defaultLogLevel        = "info"
-	defaultShutdownTimeout = 10 * time.Second
+	DefaultLogLevel        = "info"
+	DefaultShutdownTimeout = 10 * time.Second
 )
 
 // New returns a new multiprotocol server.
 func New(version, branch, commit, date string, opts ...Option) (*MultiprotocolServer, error) {
 	s := &MultiprotocolServer{
-		loglevel:        defaultLogLevel,
-		shutdownTimeout: defaultShutdownTimeout,
+		loglevel:        DefaultLogLevel,
+		shutdownTimeout: DefaultShutdownTimeout,
 		stdout:          os.Stdout,
 
 		info:      build.Info(filepath.Base(os.Args[0]), version, branch, commit, date),
