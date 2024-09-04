@@ -150,3 +150,39 @@ func (c Config) WriteTimeout() time.Duration {
 func (c Config) ShutdownTimeout() time.Duration {
 	return c.shutdownTimeout
 }
+
+// ToOptions converts the configuration to a list of options.
+func (c Config) ToOptions() []Option {
+	var options []Option
+	if c.serverAddr != "" {
+		options = append(options, WithAddr(c.serverAddr))
+	}
+	if c.tlsCert != "" && c.tlsKey != "" {
+		options = append(options, WithTLSCert(c.tlsCert, c.tlsKey))
+	}
+	if c.tlsCACert != "" {
+		options = append(options, WithTLSClientCACert(c.tlsCACert))
+	}
+	if c.mtlsEnabled {
+		options = append(options, WithMTLSEnabled(c.mtlsEnabled))
+	}
+	if len(c.allowedOrigins) > 0 {
+		options = append(options, WithCORSAllowedOrigins(c.allowedOrigins))
+	}
+	if len(c.allowedMethods) > 0 {
+		options = append(options, WithCORSAllowedMethods(c.allowedMethods))
+	}
+	if len(c.allowedHeaders) > 0 {
+		options = append(options, WithCORSAllowedHeaders(c.allowedHeaders))
+	}
+	if c.writeTimeout > 0 {
+		options = append(options, WithWriteTimeout(c.writeTimeout))
+	}
+	if c.readTimeout > 0 {
+		options = append(options, WithReadTimeout(c.readTimeout))
+	}
+	if c.shutdownTimeout > 0 {
+		options = append(options, WithShutdownTimeout(c.shutdownTimeout))
+	}
+	return options
+}

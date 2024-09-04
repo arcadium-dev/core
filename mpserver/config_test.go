@@ -9,13 +9,23 @@ import (
 	"arcadium.dev/core/mpserver"
 )
 
-func TestNewConfig(t *testing.T) {
+var (
+	expectedLogLevel        = "warn"
+	expectedShutdownTimeout = 111 * time.Second
+)
+
+func setenv(t *testing.T) {
+	t.Setenv("LOG_LEVEL", expectedLogLevel)
+	t.Setenv("SHUTDOWN_TIMEOUT", "111s")
+}
+
+func TestConfig_New(t *testing.T) {
 	for _, env := range []string{"LOG_LEVEL", "SHUTDOWN_TIMEOUT"} {
 		os.Unsetenv(env)
 	}
 
 	t.Run("test defaults", func(t *testing.T) {
-		cfg, err := mpserver.NewConfig()
+		cfg, err := mpserver.NewConfig("test")
 
 		assert.Nil(t, err)
 		assert.Equal(t, cfg.LogLevel(), mpserver.DefaultLogLevel)
@@ -23,16 +33,20 @@ func TestNewConfig(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		expectedLogLevel := "warn"
-		expectedShutdownTimeout := 111 * time.Second
-
-		t.Setenv("LOG_LEVEL", expectedLogLevel)
-		t.Setenv("SHUTDOWN_TIMEOUT", "111s")
-
+		setenv(t)
 		cfg, err := mpserver.NewConfig()
 
 		assert.Nil(t, err)
 		assert.Equal(t, cfg.LogLevel(), expectedLogLevel)
 		assert.Equal(t, cfg.ShutdownTimeout(), expectedShutdownTimeout)
 	})
+}
+
+func TestConfig_ToOptions(t *testing.T) {
+	setenv(t)
+	cfg, err := mpserver.NewConfig()
+	assert.Nil(t, err)
+	options := cfg.ToOptions()
+
+	assert.Equal(t, len(options), 2)
 }

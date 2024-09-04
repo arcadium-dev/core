@@ -65,3 +65,14 @@ func (c Config) LogLevel() string {
 func (c Config) ShutdownTimeout() time.Duration {
 	return c.shutdownTimeout
 }
+
+func (c Config) ToOptions() []Option {
+	var options []Option
+	if c.logLevel != "" {
+		options = append(options, WithLogLevel(c.logLevel))
+	}
+	if c.shutdownTimeout > 0 {
+		options = append(options, WithShutdownTimeout(c.shutdownTimeout))
+	}
+	return options
+}
