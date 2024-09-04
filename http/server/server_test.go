@@ -383,7 +383,7 @@ func TestServer_Serve(t *testing.T) {
 		s.Register(context.Background(), m)
 
 		assert.Equal(t, s.Services().Len(), 1)
-		assert.Equal(t, s.Services().Index(0).Name(), "mockService")
+		assert.Equal(t, s.Services().Get(0).Name(), "mockService")
 
 		result := make(chan error, 1)
 		var wg sync.WaitGroup
@@ -418,7 +418,7 @@ func TestServer_Serve(t *testing.T) {
 		s.Register(ctx, m)
 
 		assert.Equal(t, s.Services().Len(), 1)
-		assert.Equal(t, s.Services().Index(0).Name(), "mockService")
+		assert.Equal(t, s.Services().Get(0).Name(), "mockService")
 
 		result := make(chan error, 1)
 		var wg sync.WaitGroup
@@ -449,7 +449,7 @@ func TestServer_Serve(t *testing.T) {
 		s.Register(ctx, m)
 
 		require.Equal(t, s.Services().Len(), 1)
-		assert.Equal(t, s.Services().Index(0).Name(), "mockService")
+		assert.Equal(t, s.Services().Get(0).Name(), "mockService")
 
 		result := make(chan error, 1)
 		var wg sync.WaitGroup

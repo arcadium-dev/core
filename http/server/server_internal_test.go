@@ -29,5 +29,5 @@ func (s Server) Services() *Services {
 	return s.services
 }
 
-func (s *Services) Len() int            { return s.len() }
-func (s *Services) Index(i int) Service { return s.index(i) }
+func (s *Services) Len() int          { return s.len() }
+func (s *Services) Get(i int) Service { return s.get(i) }

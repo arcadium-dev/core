@@ -10,6 +10,7 @@ import (
 
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/build"
+	"arcadium.dev/core/log"
 	"arcadium.dev/core/mpserver"
 	"arcadium.dev/core/require"
 )
@@ -42,14 +43,12 @@ func TestMPServer_New(t *testing.T) {
 			opts: []mpserver.Option{
 				mpserver.WithLogLevel("debug"),
 				mpserver.WithShutdownTimeout(600 * time.Second),
-				mpserver.WithProtocolServer(mockProtocolServer{}, mockProtocolServer{}),
 			},
 			verify: func(t *testing.T, s *mpserver.MultiprotocolServer, err error) {
 				assert.Nil(t, err)
 				require.NotNil(t, s)
 				assert.Equal(t, s.GetLogLevel(), "debug")
 				assert.Equal(t, s.GetShutdownTimeout(), 600*time.Second)
-				assert.Equal(t, len(s.GetServers()), 2)
 				assert.Equal(t, s.GetBuildInfo(), build.Information{
 					Name:    "mpserver.test",
 					Version: version,
@@ -73,11 +72,32 @@ func TestMPServer_New(t *testing.T) {
 	}
 }
 
+func TestMPServer_Register(t *testing.T) {
+	var (
+		version = "version"
+		branch  = "branch"
+		commit  = "commit"
+		date    = "date"
+	)
+
+	ctx, b := log.SetupTestLogging(t)
+	s, err := mpserver.New(version, branch, commit, date)
+	assert.Nil(t, err)
+
+	server := mockProtocolServer{}
+
+	s.Register(ctx, server)
+
+	require.Equal(t, b.Len(), 1)
+	assert.Equal(t, b.Index(0), `{"severity":"info","message":"protocol server registered: mockProtocolServer"}`+"\n")
+}
+
 func TestMPServer_Serve(t *testing.T) {
 	tests := []struct {
-		name   string
-		opts   []mpserver.Option
-		verify func(t *testing.T, err error)
+		name    string
+		opts    []mpserver.Option
+		servers []mpserver.ProtocolServer
+		verify  func(t *testing.T, err error)
 	}{
 		{
 			name: "nothing to serve failure",
@@ -94,11 +114,11 @@ func TestMPServer_Serve(t *testing.T) {
 			opts: []mpserver.Option{
 				mpserver.WithLogLevel("error"),
 				mpserver.WithShutdownTimeout(1 * time.Second),
-				mpserver.WithProtocolServer(
-					mockProtocolServer{err: errors.New("failed to start, 1")},
-					mockProtocolServer{err: errors.New("failed to start, 2")},
-					mockProtocolServer{err: errors.New("failed to start, 3")},
-				),
+			},
+			servers: []mpserver.ProtocolServer{
+				mockProtocolServer{err: errors.New("failed to start, 1")},
+				mockProtocolServer{err: errors.New("failed to start, 2")},
+				mockProtocolServer{err: errors.New("failed to start, 3")},
 			},
 			verify: func(t *testing.T, err error) {
 				assert.Contains(t, err.Error(), "failed to start, ")
@@ -111,7 +131,7 @@ func TestMPServer_Serve(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			s, err := mpserver.New(version, branch, commit, date, test.opts...)
 			require.Nil(t, err)
-
+			s.Register(s.Ctx(), test.servers...)
 			err = s.Serve()
 			test.verify(t, err)
 		})
@@ -119,13 +139,14 @@ func TestMPServer_Serve(t *testing.T) {
 }
 
 func TestMPServer_Shutdown(t *testing.T) {
-	s, err := mpserver.New(version, branch, commit, date, mpserver.WithProtocolServer(
-		mockProtocolServer{},
-		mockProtocolServer{},
-		mockProtocolServer{},
-		mockProtocolServer{},
-	))
+	s, err := mpserver.New(version, branch, commit, date)
 	require.Nil(t, err)
+	s.Register(s.Ctx(), []mpserver.ProtocolServer{
+		mockProtocolServer{},
+		mockProtocolServer{},
+		mockProtocolServer{},
+		mockProtocolServer{},
+	}...)
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -148,3 +169,5 @@ func (m mockProtocolServer) Serve(context.Context) error {
 }
 
 func (m mockProtocolServer) Shutdown(context.Context) {}
+
+func (m mockProtocolServer) Name() string { return "mockProtocolServer" }

@@ -44,15 +44,6 @@ func WithLogLevel(logLevel string) Option {
 	})
 }
 
-// WithProtocolServer adds protocol servers to be managed.
-func WithProtocolServer(pserver ...ProtocolServer) Option {
-	return newOption(func(s *MultiprotocolServer) {
-		if len(pserver) > 0 {
-			s.servers = append(s.servers, pserver...)
-		}
-	})
-}
-
 // WithShutdownTimeout defines the maximum amount of time allowed to gracefully
 // shutdown the protocol servers.
 func WithShutdownTimeout(d time.Duration) Option {
