@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sync"
 	"syscall"
 	"time"
 
@@ -36,7 +37,6 @@ type (
 	MultiprotocolServer struct {
 		// configurable via options
 		loglevel        string
-		servers         []ProtocolServer
 		shutdownTimeout time.Duration
 		stdout          io.Writer
 
@@ -45,6 +45,8 @@ type (
 		info      build.Information
 		interrupt chan os.Signal
 		logger    *zerolog.Logger
+
+		servers *servers
 	}
 
 	// ProtocolServer defines the behavior expended from a protocol server.
@@ -55,8 +57,34 @@ type (
 		// Shutdown a protocol server. Calling shutdown for a server that returns
 		// an erro from Serve must be a noop.
 		Shutdown(context.Context)
+
+		// Name returns the name of the server.
+		Name() string
+	}
+
+	servers struct {
+		mu      sync.RWMutex
+		servers []ProtocolServer
 	}
 )
+
+func (s *servers) append(svrs []ProtocolServer) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.servers = append(s.servers, svrs...)
+}
+
+func (s *servers) len() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.servers)
+}
+
+func (s *servers) get(i int) ProtocolServer {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.servers[i]
+}
 
 const (
 	DefaultLogLevel        = "info"
@@ -69,9 +97,9 @@ func New(version, branch, commit, date string, opts ...Option) (*MultiprotocolSe
 		loglevel:        DefaultLogLevel,
 		shutdownTimeout: DefaultShutdownTimeout,
 		stdout:          os.Stdout,
-
-		info:      build.Info(filepath.Base(os.Args[0]), version, branch, commit, date),
-		interrupt: make(chan os.Signal, 1),
+		info:            build.Info(filepath.Base(os.Args[0]), version, branch, commit, date),
+		interrupt:       make(chan os.Signal, 1),
+		servers:         &servers{},
 	}
 
 	// Load options.
@@ -102,17 +130,26 @@ func New(version, branch, commit, date string, opts ...Option) (*MultiprotocolSe
 	return s, nil
 }
 
+func (s *MultiprotocolServer) Register(ctx context.Context, servers ...ProtocolServer) {
+	s.servers.append(servers)
+	for _, server := range servers {
+		zerolog.Ctx(ctx).Info().Msgf("protocol server registered: %s", server.Name())
+	}
+}
+
 // Serve starts the protocol servers, waits for them to start (or fail), and
 // then shuts down the servers.
-func (s *MultiprotocolServer) Serve() error {
-	if len(s.servers) == 0 {
+func (s MultiprotocolServer) Serve() error {
+	if s.servers.len() == 0 {
 		return fmt.Errorf("exiting, nothing to server")
 	}
 
 	s.logger.Info().Msgf("starting %s", s.info)
 
-	result := make(chan error, len(s.servers))
-	for _, server := range s.servers {
+	l := s.servers.len()
+	result := make(chan error, l)
+	for i := 0; i < l; i++ {
+		server := s.servers.get(i)
 		go func() {
 			result <- server.Serve(s.ctx)
 		}()
@@ -132,8 +169,8 @@ func (s *MultiprotocolServer) Serve() error {
 
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(s.shutdownTimeout))
 	defer cancel()
-	for _, server := range s.servers {
-		server.Shutdown(ctx)
+	for i := 0; i < s.servers.len(); i++ {
+		s.servers.get(i).Shutdown(ctx)
 	}
 
 	return err

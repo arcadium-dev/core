@@ -104,7 +104,7 @@ func (s *services) len() int {
 	return len(s.services)
 }
 
-func (s *services) index(i int) Service {
+func (s *services) get(i int) Service {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.services[i]
@@ -276,7 +276,7 @@ func (s Server) Serve(ctx context.Context) error {
 
 	serviceNames := make([]string, 0)
 	for i := 0; i < s.services.len(); i++ {
-		service := s.services.index(i)
+		service := s.services.get(i)
 		serviceNames = append(serviceNames, service.Name())
 	}
 	services := strings.Join(serviceNames, ",")
@@ -304,7 +304,7 @@ func (s Server) Shutdown(ctx context.Context) {
 
 	// Stop each service.
 	for i := 0; i < s.services.len(); i++ {
-		service := s.services.index(i)
+		service := s.services.get(i)
 		service.Shutdown(ctx)
 		zerolog.Ctx(ctx).Info().Msgf("http service shutdown, service: %s", service.Name())
 	}
