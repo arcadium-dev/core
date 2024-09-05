@@ -465,6 +465,12 @@ func TestServer_Serve(t *testing.T) {
 	})
 }
 
+func TestServer_Name(t *testing.T) {
+	s, err := server.New(context.Background())
+	assert.Nil(t, err)
+	assert.Equal(t, s.Name(), "http server")
+}
+
 type (
 	mockService struct {
 		registerCalled, handlerCalled, panicCalled bool
