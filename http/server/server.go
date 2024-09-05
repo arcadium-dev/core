@@ -316,3 +316,8 @@ func (s Server) Shutdown(ctx context.Context) {
 
 	zerolog.Ctx(ctx).Info().Msg("http server shutdown")
 }
+
+// Name returns the name of the server.
+func (s Server) Name() string {
+	return "http server"
+}
