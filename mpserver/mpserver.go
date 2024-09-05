@@ -127,6 +127,8 @@ func New(version, branch, commit, date string, opts ...Option) (*MultiprotocolSe
 	}
 	s.ctx = s.logger.WithContext(s.ctx)
 
+	s.logger.Info().Msgf("starting %s", s.info)
+
 	return s, nil
 }
 
@@ -143,8 +145,6 @@ func (s MultiprotocolServer) Serve() error {
 	if s.servers.len() == 0 {
 		return fmt.Errorf("exiting, nothing to server")
 	}
-
-	s.logger.Info().Msgf("starting %s", s.info)
 
 	l := s.servers.len()
 	result := make(chan error, l)
