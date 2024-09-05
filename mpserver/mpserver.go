@@ -183,3 +183,6 @@ func (s MultiprotocolServer) Shutdown() {
 
 // Ctx returns the context used by this server.
 func (s MultiprotocolServer) Ctx() context.Context { return s.ctx }
+
+// Info returns the build info.
+func (s MultiprotocolServer) Info() build.Information { return s.info }
