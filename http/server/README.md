@@ -2,14 +2,6 @@
 
 ## Deployment
 
-#### LOG_LEVEL
-LOG_LEVEL defines the level of logging. Valid levels are `debug`, `warn`, `info`, and
-`error`.
-
-```
-LOG_LEVEL="info"
-```
-
 #### SERVER_ADDR
 SERVER_ADDR defines the address the Alexandria API service will listen to.
 This is required.
@@ -39,7 +31,7 @@ ALLOWED_ORIGINS sets the allowed origins for CORS requests, as used in the
 'Allow-Access-Control-Origin' HTTP header. Note: Passing in a string "*"
 will allow any domain.
 
-#### ALLOWED_METHODS 
+#### ALLOWED_METHODS
 ALLOWED_METHODS can be used to explicitly allow methods in the
 Access-Control-Allow-Methods header. This is a replacement operation so you
 must also pass GET, HEAD, and POST if you wish to support those methods.
@@ -52,17 +44,28 @@ explicitly declared if accepting Content-Types other than
 application/x-www-form-urlencoded, multipart/form-data, or
 text/plain.
 
-#### CLIENT_ID
-CLIENT_ID is the okta client id used to verify authentication bearer tokens.
-
-```
-CLIENT_ID="0oa...1d8"
-```
-
 #### PPROF_ENABLED
-PPROF_ENABLED adds the pprof endpoints to the server. 
+PPROF_ENABLED adds the pprof endpoints to the server.
 See: https://pkg.go.dev/net/http/pprof and https://go.dev/blog/pprof
 
 ```
 PPROF_ENABLED="true"
+```
+
+#### READ_TIMEOUT
+READ_TIMEOUT sets the server's read timeout. The default value is 5 seconds.
+```
+READ_TIMEOUT=5s
+```
+
+#### WRITE_TIMEOUT
+WRITE_TIMEOUT sets the server's write timeout. The default value is 10 seconds.
+```
+WRITE_TIMEOUT=15s
+```
+
+#### SHUTDOWN_TIMEOUT
+SHUTDOWN_TIMEOUT sets the server's shutdown timeout. The defailt value is 10 seconds.
+```
+SHUTDOWN_TIMEOUT=10s
 ```
