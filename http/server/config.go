@@ -36,6 +36,7 @@ type (
 		readTimeout     time.Duration
 		writeTimeout    time.Duration
 		shutdownTimeout time.Duration
+		pprofEnabled    bool
 	}
 )
 
@@ -53,6 +54,7 @@ func NewConfig(prefix ...string) (Config, error) {
 		ReadTimeout     time.Duration `split_words:"true"`
 		WriteTimeout    time.Duration `split_words:"true"`
 		ShutdownTimeout time.Duration `split_words:"true"`
+		PprofEnabled    bool          `split_words:"true"`
 	}{}
 
 	pfix := ""
@@ -72,6 +74,7 @@ func NewConfig(prefix ...string) (Config, error) {
 		readTimeout:     cfg.ReadTimeout,
 		writeTimeout:    cfg.WriteTimeout,
 		shutdownTimeout: cfg.ShutdownTimeout,
+		pprofEnabled:    cfg.PprofEnabled,
 	}
 
 	origins := strings.TrimSpace(cfg.AllowedOrigins)
@@ -149,6 +152,11 @@ func (c Config) WriteTimeout() time.Duration {
 // ShutdownTimeout returns the server shutdown timeout.
 func (c Config) ShutdownTimeout() time.Duration {
 	return c.shutdownTimeout
+}
+
+// PprofEnabled returns true when pprof should be enabled.
+func (c Config) PprofEnabled() bool {
+	return c.pprofEnabled
 }
 
 // ToOptions converts the configuration to a list of options.

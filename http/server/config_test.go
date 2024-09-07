@@ -21,6 +21,7 @@ var (
 	expectedReadTimeout     = 7 * time.Second
 	expectedWriteTimeout    = 13 * time.Second
 	expectedShutdownTimeout = 111 * time.Second
+	expectedPprofEnabled    = "true"
 )
 
 func setenv(t *testing.T) {
@@ -35,6 +36,7 @@ func setenv(t *testing.T) {
 	t.Setenv("READ_TIMEOUT", expectedReadTimeout.String())
 	t.Setenv("WRITE_TIMEOUT", expectedWriteTimeout.String())
 	t.Setenv("SHUTDOWN_TIMEOUT", expectedShutdownTimeout.String())
+	t.Setenv("PPROF_ENABLED", expectedPprofEnabled)
 }
 
 func TestConfig_New(t *testing.T) {
@@ -63,6 +65,7 @@ func TestConfig_New(t *testing.T) {
 		assert.Equal(t, cfg.ReadTimeout(), expectedReadTimeout)
 		assert.Equal(t, cfg.WriteTimeout(), expectedWriteTimeout)
 		assert.Equal(t, cfg.ShutdownTimeout(), expectedShutdownTimeout)
+		assert.True(t, cfg.PprofEnabled())
 	})
 }
 
