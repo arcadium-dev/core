@@ -16,8 +16,6 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/rs/zerolog v1.35.1
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
-	golang.org/x/vuln v1.3.0
-	honnef.co/go/tools v0.7.0
 )
 
 require (
@@ -37,5 +35,7 @@ require (
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260421165255-392afab6f40e // indirect
 	golang.org/x/tools v0.44.0 // indirect
+	golang.org/x/vuln v1.3.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
+	honnef.co/go/tools v0.7.0 // indirect
 )
