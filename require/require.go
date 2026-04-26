@@ -1,4 +1,4 @@
-// Copyright 2021-2023 arcadium.dev <info@arcadium.dev>
+// Copyright 2021-2026 arcadium.dev <info@arcadium.dev>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,18 +42,20 @@ func NotEqual[T comparable](t *testing.T, actual, expected T) {
 func Nil(t *testing.T, object any) {
 	t.Helper()
 
-	value := reflect.ValueOf(object)
-	kind := value.Kind()
-
-	for _, k := range []reflect.Kind{reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice} {
-		if k == kind {
-			if value.IsNil() {
-				return
-			}
-		}
-	}
 	if object == nil {
 		return
+	}
+
+	value := reflect.ValueOf(object)
+	switch value.Kind() {
+	case
+		reflect.Chan, reflect.Func,
+		reflect.Interface, reflect.Map,
+		reflect.Pointer, reflect.Slice, reflect.UnsafePointer:
+
+		if value.IsNil() {
+			return
+		}
 	}
 
 	t.Fatalf("Unexpected non-nil value: %+v", object)
@@ -62,19 +64,20 @@ func Nil(t *testing.T, object any) {
 // NotNil requires that the value of the given object is not nil.
 func NotNil(t *testing.T, object any) {
 	t.Helper()
-
-	value := reflect.ValueOf(object)
-	kind := value.Kind()
-
-	for _, k := range []reflect.Kind{reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice} {
-		if k == kind {
-			if !value.IsNil() {
-				return
-			}
-		}
-	}
 	if object != nil {
 		return
+	}
+
+	value := reflect.ValueOf(object)
+	switch value.Kind() {
+	case
+		reflect.Chan, reflect.Func,
+		reflect.Interface, reflect.Map,
+		reflect.Pointer, reflect.Slice, reflect.UnsafePointer:
+
+		if !value.IsNil() {
+			return
+		}
 	}
 
 	t.Fatalf("Unexpected nil value: %+v", object)
