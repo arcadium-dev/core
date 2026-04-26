@@ -23,22 +23,12 @@ vet:
 	go vet ./...
 
 staticcheck:
-	@if [[ ! -x "$$(go env GOPATH)/bin/staticcheck" ]]; then \
-		printf "\nInstalling staticcheck...\n"; \
-		go get "honnef.co/go/tools/cmd/staticcheck"; \
-		go install "honnef.co/go/tools/cmd/staticcheck"; \
-	fi
 	@printf "\nRunning staticcheck...\n"
-	$$(go env GOPATH)/bin/staticcheck ./...
+	@go tool staticcheck ./...
 
 vuln:
-	@if [[ ! -x "$$(go env GOPATH)/bin/govulncheck" ]]; then \
-		printf "\nInstalling govulncheck...\n"; \
-		go get "golang.org/x/vuln/cmd/govulncheck"; \
-		go install "golang.org/x/vuln/cmd/govulncheck"; \
-	fi
 	@printf "\nRunning govulncheck...\n"
-	$$(go env GOPATH)/bin/govulncheck ./...
+	@go tool govulncheck ./...
 
 lint: fmt tidy vet staticcheck vuln
 	@printf "\nChecking for changed files...\n"

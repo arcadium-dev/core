@@ -2,6 +2,11 @@ module arcadium.dev/core
 
 go 1.26.2
 
+tool (
+	golang.org/x/vuln/cmd/govulncheck
+	honnef.co/go/tools/cmd/staticcheck
+)
+
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/google/go-cmp v0.7.0
