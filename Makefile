@@ -24,11 +24,11 @@ vet:
 
 staticcheck:
 	@printf "\nRunning staticcheck...\n"
-	@go tool staticcheck ./...
+	go tool staticcheck ./...
 
 vuln:
 	@printf "\nRunning govulncheck...\n"
-	@go tool govulncheck ./...
+	go tool govulncheck ./...
 
 lint: fmt tidy vet staticcheck vuln
 	@printf "\nChecking for changed files...\n"
@@ -42,7 +42,7 @@ lint: fmt tidy vet staticcheck vuln
 
 unit_test:
 	@printf "\nRunning go test...\n"
-	go test -cover -race ./...
+	go test -count=1 -cover -race ./...
 
 test: unit_test
 
