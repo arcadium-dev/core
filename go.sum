@@ -1,3 +1,5 @@
+arcadium.dev/telnet v0.0.2 h1:OHK5iG3rtBJL8jeXSYA9bhlsUbEsA8S9AbW72THFhog=
+arcadium.dev/telnet v0.0.2/go.mod h1:9XKMKzAfW9OkchBTjN2SAMRkWPvp1yoDcfxpjfyg55A=
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=
