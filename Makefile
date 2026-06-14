@@ -52,7 +52,4 @@ test: unit_test
 
 clean:
 	@printf "\nClean...\n"
-	-go clean -testcache
-	-rm -f $$(go env GOPATH)/bin/staticcheck
-	-rm -f $$(go env GOPATH)/bin/govulncheck
-	-rm -f $$(go env GOPATH)/bin/swagger
+	-go clean -testcache -cache
