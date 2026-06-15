@@ -81,7 +81,6 @@ func TestRegister(t *testing.T) {
 
 	m := &mockService{}
 	s.Register(m)
-	assert.True(t, m.registerCalled)
 
 	mw := &mockMiddleware{}
 	s.Middleware(mw.mock)
@@ -158,16 +157,12 @@ func TestServe(t *testing.T) {
 
 type (
 	mockService struct {
-		registerCalled, handlerCalled, shutdownCalled bool
-		whenHandled                                   time.Time
+		handlerCalled, shutdownCalled bool
+		whenHandled                   time.Time
 	}
 )
 
 var _ telnet.Service = (*mockService)(nil)
-
-func (m *mockService) Register(s *telnet.Server) {
-	m.registerCalled = true
-}
 
 func (m *mockService) Name() string {
 	return "mockService"

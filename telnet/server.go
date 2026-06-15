@@ -68,10 +68,6 @@ type (
 	// Service defines the methods required by the server to associate the
 	// service with the server.
 	Service interface {
-		// Register provides a method to install the service handler with the
-		// server.
-		Register(*Server)
-
 		// Name returns the name of the service.
 		Name() string
 
@@ -115,7 +111,6 @@ func (s *Server) Middleware(middleware ...MiddlewareFunc) {
 // Register associates the given service with the server.
 func (s *Server) Register(service Service) {
 	s.service = service
-	s.service.Register(s)
 	s.logger.Info().Str("service", service.Name()).Msg("telnet service registered")
 }
 
