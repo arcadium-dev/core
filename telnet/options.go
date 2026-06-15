@@ -12,10 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package telnet // import "arcadium.dev/dmx/telnet"
+package telnet
 
 import (
-	"log/slog"
+	"github.com/rs/zerolog"
 )
 
 type (
@@ -33,7 +33,7 @@ func WithServerAddress(addr string) ServerOption {
 }
 
 // WithServerLogger provides a logger to the server.
-func WithServerLogger(logger *slog.Logger) ServerOption {
+func WithServerLogger(logger *zerolog.Logger) ServerOption {
 	return newServerOption(func(s *Server) {
 		s.logger = logger
 	})

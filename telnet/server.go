@@ -12,15 +12,14 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-package telnet // import "arcadium.dev/dmx/telnet"
+package telnet
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
 	"net"
 
-	"arcadium.dev/telnet"
+	"github.com/globalcyberalliance/telnet-go"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -59,14 +58,11 @@ type (
 
 	// Server represent a telnet server.
 	Server struct {
-		addr     string
-		logger   *slog.Logger
-		listener net.Listener
-
+		addr       string
+		logger     *zerolog.Logger
 		middleware []MiddlewareFunc
-		handler    Handler
-
-		service Service
+		server     *telnet.Server
+		service    Service
 	}
 
 	// Service defines the methods required by the server to associate the
@@ -79,6 +75,9 @@ type (
 		// Name returns the name of the service.
 		Name() string
 
+		// ServeTELNET provides the telnet handler.
+		ServeTELNET(*telnet.Session)
+
 		// Shutdown allows the service to stop any long running backgroun processes
 		// it may have.
 		Shutdown(context.Context)
@@ -87,16 +86,23 @@ type (
 
 // NewServer create a telnet server with the given server options.
 func NewServer(opts ...ServerOption) *Server {
+	nop := zerolog.Nop()
+
 	s := &Server{
 		addr:   DefaultAddr,
-		logger: slog.New(slog.DiscardHandler),
+		logger: &nop,
 	}
 
 	for _, opt := range opts {
 		opt.Apply(s)
 	}
 
-	s.logger.Info("telnet server created", "address", s.addr)
+	s.server = &telnet.Server{
+		Handler:     s.handle,
+		ConnContext: s.connContext,
+	}
+
+	s.logger.Info().Str("address", s.addr).Msg("telnet server created")
 
 	return s
 }
@@ -106,21 +112,16 @@ func (s *Server) Middleware(middleware ...MiddlewareFunc) {
 	s.middleware = append(s.middleware, middleware...)
 }
 
-// HandleFunc installs a handler function for this server.
-func (s *Server) HandleFunc(f HandlerFunc) {
-	s.handler = f
-}
-
 // Register associates the given service with the server.
 func (s *Server) Register(service Service) {
 	s.service = service
 	s.service.Register(s)
-	s.logger.Info(fmt.Sprintf("telnet service registered: '%s'", service.Name()))
+	s.logger.Info().Str("service", service.Name()).Msg("telnet service registered")
 }
 
 // Serve creates the underlying network connection and starts the telnet
 // server.
-func (s *Server) Serve(ctx context.Context) error {
+func (s *Server) Serve() error {
 	var (
 		err      error
 		listener net.Listener
@@ -129,62 +130,38 @@ func (s *Server) Serve(ctx context.Context) error {
 	if listener, err = net.Listen("tcp", s.addr); err != nil {
 		return err
 	}
-	s.listener = listener
 
-	s.logger.Info("begin serving telnet", "address", s.addr, "service,", s.service.Name())
-	defer s.logger.Info("serving telnet complete", "address", s.addr, "service,", s.service.Name())
+	s.logger.Info().Str("address", s.addr).Str("service", s.service.Name()).Msg("begin serving telnet")
+	defer s.logger.Info().Str("address", s.addr).Str("service", s.service.Name()).Msg("serving telnet complete")
 
-	result := make(chan error, 1)
-	go func() {
-		server := &telnet.Server{
-			Handler: s.handle,
-		}
-		result <- server.Serve(listener)
-		server.Shutdown()
-	}()
-
-	select {
-	// Wait for a cancelled context, or...
-	case <-ctx.Done():
-		// Can't shutdown the telnet server since we don't have a
-		// reference to it.
-		s.logger.Info("telnet serve context cancelled")
-
-	// Wait for the server to exit (like the server fails to start)...
-	case err = <-result:
-		if err != nil {
-			s.logger.Error("failed to start server", "error", err)
-		}
-	}
-	return err
+	return s.server.Serve(listener)
 }
 
 // Shutdown stops the telnet server.
 func (s *Server) Shutdown(ctx context.Context) {
-	// Stop the service.
 	s.service.Shutdown(ctx)
-	s.logger.Info("telnet service shutdown", "service", s.service.Name())
+	s.logger.Info().Str("service", s.service.Name()).Msgf("telnet service shutdown")
 
-	if s.listener != nil {
-		if err := s.listener.Close(); err != nil {
-			s.logger.Error("failed to shutdown server listener", "error", err)
-		}
+	if err := s.server.Shutdown(); err != nil {
+		s.logger.Err(err).Msgf("failed to shutdown telnet server")
 	}
 
-	s.logger.Info("telnet server shutdown")
+	s.logger.Info().Msg("telnet server shutdown")
 }
 
+// handle provides the session handler, building a middleware chain
+// and then calling the service's handler.
 func (s *Server) handle(session *telnet.Session) {
-	// If the service handler hasn't been register, log an error.
-	if s.handler == nil {
-		s.logger.Error("telnet service handler not registered")
+	// If the service hasn't been register, log an error.
+	if s.service == nil {
+		s.logger.Error().Msg("telnet service not registered")
 		return
 	}
 
-	// Build a chain of functions, starting with the registered handler function
+	// Build a chain of functions, starting with the registered service
 	// as the last link in the chain, and adding each middleware function in
 	// reverst order to the chain.
-	var chain Handler = s.handler
+	var chain Handler = s.service
 
 	// Starting at the end of the middleware slice and working backwards, link
 	// the functions together.
@@ -194,4 +171,14 @@ func (s *Server) handle(session *telnet.Session) {
 
 	// Call the chain.
 	chain.ServeTELNET(session)
+}
+
+// connContext provides a context with an embedded logger containing the
+// remote address of the connection.
+func (s *Server) connContext(ctx context.Context, conn net.Conn) context.Context {
+	logger := s.logger.With().
+		Str("remote", conn.RemoteAddr().String()).
+		Logger()
+
+	return logger.WithContext(ctx)
 }

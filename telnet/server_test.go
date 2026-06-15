@@ -2,22 +2,28 @@ package telnet_test
 
 import (
 	"context"
-	"log/slog"
-	"os"
 	"testing"
 	"time"
 
 	"arcadium.dev/core/assert"
+	"arcadium.dev/core/log"
 	"arcadium.dev/core/require"
 	"arcadium.dev/core/telnet"
+	"github.com/rs/zerolog"
 )
 
 func TestNewServer(t *testing.T) {
 	t.Parallel()
 
-	var (
-		logger = slog.New(slog.NewTextHandler(os.Stderr, nil))
+	b := log.NewStringBuffer()
+	logger, err := log.New(
+		log.WithOutput(b),
+		log.WithLevel(zerolog.DebugLevel),
+		log.WithLevelFieldName("severity"),
+		log.WithoutTimestamp(),
+		log.AsDefault(),
 	)
+	require.Nil(t, err)
 
 	tests := []struct {
 		name   string
@@ -29,7 +35,6 @@ func TestNewServer(t *testing.T) {
 			verify: func(t *testing.T, s *telnet.Server) {
 				require.NotNil(t, s)
 				assert.Equal(t, s.Addr(), telnet.DefaultAddr)
-				assert.Compare(t, s.Logger().Handler(), slog.DiscardHandler)
 			},
 		},
 		{
@@ -40,7 +45,6 @@ func TestNewServer(t *testing.T) {
 			verify: func(t *testing.T, s *telnet.Server) {
 				require.NotNil(t, s)
 				assert.Equal(t, s.Addr(), ":2323")
-				assert.Compare(t, s.Logger().Handler(), slog.DiscardHandler)
 			},
 		},
 		{
@@ -52,6 +56,9 @@ func TestNewServer(t *testing.T) {
 				assert.NotNil(t, s)
 				assert.Equal(t, s.Addr(), telnet.DefaultAddr)
 				assert.Equal(t, s.Logger(), logger)
+
+				require.Equal(t, b.Len(), 1)
+				assert.Equal(t, b.Index(0), `{"severity":"info","address":":23","message":"telnet server created"}`+"\n")
 			},
 		},
 	}
@@ -67,6 +74,8 @@ func TestNewServer(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
+	t.Parallel()
+
 	s := telnet.NewServer()
 	require.NotNil(t, s)
 
@@ -84,6 +93,7 @@ func TestRegister(t *testing.T) {
 }
 
 func TestServe(t *testing.T) {
+	t.Parallel()
 
 	tests := []struct {
 		name    string
@@ -130,9 +140,17 @@ func TestServe(t *testing.T) {
 			mw := &mockMiddleware{}
 			s.Middleware(mw.mock)
 
-			err := s.Serve(test.ctx())
-			s.Shutdown(test.ctx())
+			result := make(chan error, 1)
+			go func() {
+				result <- s.Serve()
+			}()
 
+			var err error
+			select {
+			case <-test.ctx().Done():
+			case err = <-result:
+			}
+			s.Shutdown(context.Background())
 			test.verify(t, test.service, err)
 		})
 	}
@@ -149,20 +167,19 @@ var _ telnet.Service = (*mockService)(nil)
 
 func (m *mockService) Register(s *telnet.Server) {
 	m.registerCalled = true
-	s.HandleFunc(m.handle)
 }
 
 func (m *mockService) Name() string {
 	return "mockService"
 }
 
-func (m *mockService) Shutdown(_ context.Context) {
-	m.shutdownCalled = true
-}
-
-func (m *mockService) handle(s *telnet.Session) {
+func (m *mockService) ServeTELNET(s *telnet.Session) {
 	m.handlerCalled = true
 	m.whenHandled = time.Now()
+}
+
+func (m *mockService) Shutdown(_ context.Context) {
+	m.shutdownCalled = true
 }
 
 type (

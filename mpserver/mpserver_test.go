@@ -10,7 +10,6 @@ import (
 
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/build"
-	"arcadium.dev/core/log"
 	"arcadium.dev/core/mpserver"
 	"arcadium.dev/core/require"
 )
@@ -58,7 +57,7 @@ func TestMPServer_New(t *testing.T) {
 					Go:      runtime.Version(),
 				})
 				assert.NotNil(t, s.GetInterrupt)
-				assert.NotNil(t, s.Ctx())
+				assert.NotNil(t, s.Logger())
 			},
 		},
 	}
@@ -80,16 +79,14 @@ func TestMPServer_Register(t *testing.T) {
 		date    = "date"
 	)
 
-	ctx, b := log.SetupTestLogging(t)
 	s, err := mpserver.New(version, branch, commit, date)
 	assert.Nil(t, err)
 
 	server := mockProtocolServer{}
 
-	s.Register(ctx, server)
-
-	require.Equal(t, b.Len(), 1)
-	assert.Equal(t, b.Index(0), `{"severity":"info","message":"protocol server registered: mockProtocolServer"}`+"\n")
+	require.Equal(t, s.Servers().Len(), 0)
+	s.Register(server)
+	assert.Equal(t, s.Servers().Len(), 1)
 }
 
 func TestMPServer_Serve(t *testing.T) {
@@ -106,7 +103,7 @@ func TestMPServer_Serve(t *testing.T) {
 				mpserver.WithShutdownTimeout(300 * time.Second),
 			},
 			verify: func(t *testing.T, err error) {
-				assert.Error(t, err, "exiting, nothing to server")
+				assert.Error(t, err, "exiting, no servers to serve")
 			},
 		},
 		{
@@ -131,7 +128,10 @@ func TestMPServer_Serve(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			s, err := mpserver.New(version, branch, commit, date, test.opts...)
 			require.Nil(t, err)
-			s.Register(s.Ctx(), test.servers...)
+
+			s.Register(test.servers...)
+			require.Equal(t, s.Servers().Len(), len(test.servers))
+
 			err = s.Serve()
 			test.verify(t, err)
 		})
@@ -141,7 +141,7 @@ func TestMPServer_Serve(t *testing.T) {
 func TestMPServer_Shutdown(t *testing.T) {
 	s, err := mpserver.New(version, branch, commit, date)
 	require.Nil(t, err)
-	s.Register(s.Ctx(), []mpserver.ProtocolServer{
+	s.Register([]mpserver.ProtocolServer{
 		mockProtocolServer{},
 		mockProtocolServer{},
 		mockProtocolServer{},
@@ -149,11 +149,11 @@ func TestMPServer_Shutdown(t *testing.T) {
 	}...)
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		err = s.Serve()
 		assert.Nil(t, err)
 		wg.Done()
-	}()
+	})
 	s.Shutdown()
 	wg.Wait()
 }
@@ -164,7 +164,7 @@ type (
 	}
 )
 
-func (m mockProtocolServer) Serve(context.Context) error {
+func (m mockProtocolServer) Serve() error {
 	return m.err
 }
 
