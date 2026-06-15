@@ -74,7 +74,7 @@ type (
 		// ServeTELNET provides the telnet handler.
 		ServeTELNET(*Session)
 
-		// Shutdown allows the service to stop any long running backgroun processes
+		// Shutdown allows the service to stop any long running background processes
 		// it may have.
 		Shutdown(context.Context)
 	}
@@ -135,8 +135,6 @@ func (s *Server) Serve() error {
 // Shutdown stops the telnet server.
 func (s *Server) Shutdown(ctx context.Context) {
 	s.service.Shutdown(ctx)
-	s.logger.Info().Str("service", s.service.Name()).Msgf("telnet service shutdown")
-
 	if err := s.server.Shutdown(); err != nil {
 		s.logger.Err(err).Msgf("failed to shutdown telnet server")
 	}
