@@ -52,7 +52,7 @@ type (
 	// ProtocolServer defines the behavior expended from a protocol server.
 	ProtocolServer interface {
 		// Serve starts the server. This will be run in its own go routine.
-		Serve(context.Context) error
+		Serve() error
 
 		// Shutdown a protocol server. Calling shutdown for a server that returns
 		// an erro from Serve must be a noop.
@@ -125,17 +125,15 @@ func New(version, branch, commit, date string, opts ...Option) (*MultiprotocolSe
 	if s.logger, err = log.New(log.AsDefault(), log.WithLevel(log.ToLevel(s.loglevel)), log.WithOutput(s.stdout)); err != nil {
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
-	s.ctx = s.logger.WithContext(s.ctx)
-
 	s.logger.Info().Msgf("starting %s", s.info)
 
 	return s, nil
 }
 
-func (s *MultiprotocolServer) Register(ctx context.Context, servers ...ProtocolServer) {
+func (s *MultiprotocolServer) Register(servers ...ProtocolServer) {
 	s.servers.append(servers)
 	for _, server := range servers {
-		zerolog.Ctx(ctx).Info().Msgf("protocol server registered: %s", server.Name())
+		s.logger.Info().Str("server", server.Name()).Msg("protocol server registered")
 	}
 }
 
@@ -143,15 +141,15 @@ func (s *MultiprotocolServer) Register(ctx context.Context, servers ...ProtocolS
 // then shuts down the servers.
 func (s MultiprotocolServer) Serve() error {
 	if s.servers.len() == 0 {
-		return fmt.Errorf("exiting, nothing to server")
+		return fmt.Errorf("exiting, no servers to serve")
 	}
 
 	l := s.servers.len()
 	result := make(chan error, l)
-	for i := 0; i < l; i++ {
+	for i := range l {
 		server := s.servers.get(i)
 		go func() {
-			result <- server.Serve(s.ctx)
+			result <- server.Serve()
 		}()
 	}
 
@@ -159,6 +157,9 @@ func (s MultiprotocolServer) Serve() error {
 	select {
 	// Wait for an interrupt.
 	case <-s.ctx.Done():
+		if s.ctx.Err() != nil {
+			s.logger.Err(err).Msg("error on interrupt")
+		}
 
 	// If a protocol server fails to start.
 	case err = <-result:
@@ -181,8 +182,8 @@ func (s MultiprotocolServer) Shutdown() {
 	close(s.interrupt)
 }
 
-// Ctx returns the context used by this server.
-func (s MultiprotocolServer) Ctx() context.Context { return s.ctx }
-
 // Info returns the build info.
 func (s MultiprotocolServer) Info() build.Information { return s.info }
+
+// Logger returns the logger created by the server.
+func (s MultiprotocolServer) Logger() *zerolog.Logger { return s.logger }

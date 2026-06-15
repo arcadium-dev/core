@@ -9,13 +9,13 @@ tool (
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/globalcyberalliance/telnet-go v0.0.0-20250807185007-4f349961b7ed
 	github.com/google/go-cmp v0.7.0
 	github.com/gorilla/mux v1.8.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/rs/cors v1.11.1
 	github.com/rs/zerolog v1.35.1
-	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
 )
 
 require (
