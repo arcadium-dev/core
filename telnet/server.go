@@ -16,7 +16,9 @@ package telnet
 
 import (
 	"context"
+	"errors"
 	"net"
+	"sync"
 
 	"github.com/globalcyberalliance/telnet-go"
 	"github.com/rs/zerolog"
@@ -58,10 +60,15 @@ type (
 
 	// Server represent a telnet server.
 	Server struct {
+		listenerMutex sync.Mutex
+		listener      net.Listener
+
+		serverMutex sync.Mutex
+		server      *telnet.Server
+
 		addr       string
 		logger     *zerolog.Logger
 		middleware []MiddlewareFunc
-		server     *telnet.Server
 		service    Service
 	}
 
@@ -125,18 +132,37 @@ func (s *Server) Serve() error {
 	if listener, err = net.Listen("tcp", s.addr); err != nil {
 		return err
 	}
+	s.listenerMutex.Lock()
+	s.listener = listener
+	s.listenerMutex.Unlock()
 
 	s.logger.Info().Str("address", s.addr).Str("service", s.service.Name()).Msg("begin serving telnet")
 	defer s.logger.Info().Str("address", s.addr).Str("service", s.service.Name()).Msg("serving telnet complete")
 
+	s.serverMutex.Lock()
+	defer s.serverMutex.Unlock()
 	return s.server.Serve(listener)
 }
 
 // Shutdown stops the telnet server.
 func (s *Server) Shutdown(ctx context.Context) {
 	s.service.Shutdown(ctx)
+
+	// This is ugly, but this forces s.server.Serve() to exit.
+	s.listenerMutex.Lock()
+	if s.listener != nil {
+		err := s.listener.Close()
+		if err != nil && !errors.Is(err, net.ErrClosed) {
+			s.logger.Err(err).Msg("failed to close listener")
+		}
+	}
+	s.listenerMutex.Unlock()
+
+	// This cleans up any outstanding go routines.
+	s.serverMutex.Lock()
+	defer s.serverMutex.Unlock()
 	if err := s.server.Shutdown(); err != nil {
-		s.logger.Err(err).Msgf("failed to shutdown telnet server")
+		s.logger.Err(err).Msg("failed to shutdown telnet server")
 	}
 
 	s.logger.Info().Msg("telnet server shutdown")

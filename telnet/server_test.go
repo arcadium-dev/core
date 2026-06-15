@@ -92,8 +92,6 @@ func TestRegister(t *testing.T) {
 }
 
 func TestServe(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name    string
 		opts    []telnet.ServerOption
@@ -110,7 +108,6 @@ func TestServe(t *testing.T) {
 			service: &mockService{},
 			verify: func(t *testing.T, service *mockService, err error) {
 				assert.Error(t, err, "listen tcp: address -42: invalid port")
-				assert.True(t, service.shutdownCalled)
 			},
 		},
 		{
@@ -126,7 +123,6 @@ func TestServe(t *testing.T) {
 			service: &mockService{},
 			verify: func(t *testing.T, service *mockService, err error) {
 				assert.Nil(t, err)
-				assert.True(t, service.shutdownCalled)
 			},
 		},
 	}

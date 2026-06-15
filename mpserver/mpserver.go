@@ -157,6 +157,9 @@ func (s MultiprotocolServer) Serve() error {
 	select {
 	// Wait for an interrupt.
 	case <-s.ctx.Done():
+		if s.ctx.Err() != nil {
+			s.logger.Err(err).Msg("error on interrupt")
+		}
 
 	// If a protocol server fails to start.
 	case err = <-result:
