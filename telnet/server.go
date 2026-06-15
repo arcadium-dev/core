@@ -124,12 +124,9 @@ func (s *Server) Register(service Service) {
 // Serve creates the underlying network connection and starts the telnet
 // server.
 func (s *Server) Serve() error {
-	var (
-		err      error
-		listener net.Listener
-	)
 	// The underlying telnet server will close the listener.
-	if listener, err = net.Listen("tcp", s.addr); err != nil {
+	listener, err := net.Listen("tcp", s.addr)
+	if err != nil {
 		return err
 	}
 	s.listenerMutex.Lock()

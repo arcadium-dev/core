@@ -2,6 +2,7 @@ package telnet_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -92,10 +93,12 @@ func TestRegister(t *testing.T) {
 }
 
 func TestServe(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		opts    []telnet.ServerOption
-		ctx     func() context.Context
+		ctx     func() (context.Context, context.CancelFunc)
 		service *mockService
 		verify  func(*testing.T, *mockService, error)
 	}{
@@ -104,7 +107,9 @@ func TestServe(t *testing.T) {
 			opts: []telnet.ServerOption{
 				telnet.WithServerAddress(":-42"),
 			},
-			ctx:     func() context.Context { return context.Background() },
+			ctx: func() (context.Context, context.CancelFunc) {
+				return context.Background(), nil
+			},
 			service: &mockService{},
 			verify: func(t *testing.T, service *mockService, err error) {
 				assert.Error(t, err, "listen tcp: address -42: invalid port")
@@ -113,22 +118,21 @@ func TestServe(t *testing.T) {
 		{
 			name: "cancelled context",
 			opts: []telnet.ServerOption{
-				telnet.WithServerAddress(":2323"),
+				telnet.WithServerAddress(":12323"),
 			},
-			ctx: func() context.Context {
-				ctx, cancel := context.WithCancel(context.Background())
-				cancel()
-				return ctx
+			ctx: func() (context.Context, context.CancelFunc) {
+				return context.WithTimeout(context.Background(), 50*time.Millisecond)
 			},
 			service: &mockService{},
 			verify: func(t *testing.T, service *mockService, err error) {
-				assert.Nil(t, err)
+				assert.True(t, errors.Is(err, context.DeadlineExceeded))
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+
 			s := telnet.NewServer(test.opts...)
 			s.Register(test.service)
 
@@ -140,9 +144,17 @@ func TestServe(t *testing.T) {
 				result <- s.Serve()
 			}()
 
-			var err error
+			var (
+				err         error
+				ctx, cancel = test.ctx()
+			)
+			if cancel != nil {
+				defer cancel()
+			}
+
 			select {
-			case <-test.ctx().Done():
+			case <-ctx.Done():
+				err = ctx.Err()
 			case err = <-result:
 			}
 			s.Shutdown(context.Background())
