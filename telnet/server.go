@@ -41,7 +41,7 @@ type (
 
 	// HandlerFunc is an adapter to allow the use of an ordinary function as
 	// a telnet handler.
-	HandlerFunc func(*telnet.Session)
+	HandlerFunc func(*Session)
 )
 
 // ServeTELNET calls f(s).
