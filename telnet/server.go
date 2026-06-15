@@ -76,7 +76,7 @@ type (
 		Name() string
 
 		// ServeTELNET provides the telnet handler.
-		ServeTELNET(*telnet.Session)
+		ServeTELNET(*Session)
 
 		// Shutdown allows the service to stop any long running backgroun processes
 		// it may have.
@@ -151,7 +151,7 @@ func (s *Server) Shutdown(ctx context.Context) {
 
 // handle provides the session handler, building a middleware chain
 // and then calling the service's handler.
-func (s *Server) handle(session *telnet.Session) {
+func (s *Server) handle(session *Session) {
 	// If the service hasn't been register, log an error.
 	if s.service == nil {
 		s.logger.Error().Msg("telnet service not registered")
