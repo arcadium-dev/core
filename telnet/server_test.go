@@ -163,6 +163,13 @@ func TestServe(t *testing.T) {
 	}
 }
 
+func TestName(t *testing.T) {
+	t.Parallel()
+
+	s := telnet.NewServer()
+	assert.Equal(t, s.Name(), "telnet server")
+}
+
 type (
 	mockService struct {
 		handlerCalled, shutdownCalled bool

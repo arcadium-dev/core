@@ -197,3 +197,8 @@ func (s *Server) connContext(ctx context.Context, conn net.Conn) context.Context
 
 	return logger.WithContext(ctx)
 }
+
+// Name returns the name of the server.
+func (s *Server) Name() string {
+	return "telnet server"
+}
