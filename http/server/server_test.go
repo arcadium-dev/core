@@ -11,6 +11,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	"github.com/rs/zerolog"
 
 	"arcadium.dev/core/assert"
 	"arcadium.dev/core/http/server"
@@ -19,6 +20,18 @@ import (
 )
 
 func TestServer_New(t *testing.T) {
+	t.Parallel()
+
+	b := log.NewStringBuffer()
+	logger, err := log.New(
+		log.WithOutput(b),
+		log.WithLevel(zerolog.DebugLevel),
+		log.WithLevelFieldName("severity"),
+		log.WithoutTimestamp(),
+		log.AsDefault(),
+	)
+	require.Nil(t, err)
+
 	tests := []struct {
 		name   string
 		opts   []server.Option
@@ -31,6 +44,18 @@ func TestServer_New(t *testing.T) {
 			verify: func(t *testing.T, s *server.Server, err error) {
 				assert.Nil(t, err)
 				assert.Equal(t, s.Addr(), "10.11.12.13:4201")
+			},
+		},
+
+		// Test WithLogger option.
+		{
+			name: "with logger",
+			opts: []server.Option{server.WithLogger(logger)},
+			verify: func(t *testing.T, s *server.Server, err error) {
+				assert.Nil(t, err)
+				require.NotNil(t, s)
+				require.NotNil(t, s.Logger())
+				assert.Equal(t, s.Logger(), logger)
 			},
 		},
 
@@ -220,19 +245,28 @@ func TestServer_New(t *testing.T) {
 	for _, tt := range tests {
 		test := tt
 		t.Run(test.name, func(t *testing.T) {
-			s, err := server.New(context.Background(), test.opts...)
+			s, err := server.New(test.opts...)
 			test.verify(t, s, err)
 		})
 	}
 }
 
 func TestServer_Register(t *testing.T) {
-	ctx, b := log.SetupTestLogging(t)
+	b := log.NewStringBuffer()
+	logger, err := log.New(
+		log.WithOutput(b),
+		log.WithLevel(zerolog.DebugLevel),
+		log.WithLevelFieldName("severity"),
+		log.WithoutTimestamp(),
+		log.AsDefault(),
+	)
+	require.Nil(t, err)
+
 	m := &mockService{}
-	s, err := server.New(ctx)
+	s, err := server.New(server.WithLogger(logger))
 	assert.Nil(t, err)
 
-	s.Register(ctx, m)
+	s.Register(m)
 
 	if !m.registerCalled {
 		t.Errorf("Failed to call register")
@@ -346,7 +380,7 @@ func TestServer_CORS(t *testing.T) {
 	for _, tt := range tests {
 		test := tt
 		t.Run(test.name, func(t *testing.T) {
-			s, err := server.New(context.Background(), server.WithCORSOptions(test.opt))
+			s, err := server.New(server.WithCORSOptions(test.opt))
 			assert.Nil(t, err)
 			require.NotNil(t, s)
 
@@ -368,19 +402,19 @@ func TestServer_CORS(t *testing.T) {
 
 func TestServer_Serve(t *testing.T) {
 	t.Run("listen failure", func(t *testing.T) {
-		s, err := server.New(context.Background(), server.WithAddr(":-42"))
+		s, err := server.New(server.WithAddr(":-42"))
 		assert.Nil(t, err)
-		err = s.Serve(context.Background())
+		err = s.Serve()
 		assert.Contains(t, err.Error(), "failed to listen on address ':-42'")
 	})
 
 	t.Run("serve", func(t *testing.T) {
 		ctx := context.Background()
 		m := &mockService{}
-		s, err := server.New(context.Background(), server.WithAddr(":4242"))
+		s, err := server.New(server.WithAddr(":4242"))
 		assert.Nil(t, err)
 
-		s.Register(context.Background(), m)
+		s.Register(m)
 
 		assert.Equal(t, s.Services().Len(), 1)
 		assert.Equal(t, s.Services().Get(0).Name(), "mockService")
@@ -388,7 +422,7 @@ func TestServer_Serve(t *testing.T) {
 		result := make(chan error, 1)
 		var wg sync.WaitGroup
 		wg.Add(1)
-		go func() { wg.Done(); result <- s.Serve(ctx) }()
+		go func() { wg.Done(); result <- s.Serve() }()
 		wg.Wait()
 
 		s.Shutdown(ctx)
@@ -401,7 +435,7 @@ func TestServer_Serve(t *testing.T) {
 		ctx := context.Background()
 		m := &mockService{}
 
-		s, err := server.New(context.Background(), server.WithAddr(":4242"))
+		s, err := server.New(server.WithAddr(":4242"))
 		assert.Nil(t, err)
 
 		s.Middleware(func(next http.Handler) http.Handler {
@@ -415,7 +449,7 @@ func TestServer_Serve(t *testing.T) {
 				next.ServeHTTP(w, r)
 			})
 		})
-		s.Register(ctx, m)
+		s.Register(m)
 
 		assert.Equal(t, s.Services().Len(), 1)
 		assert.Equal(t, s.Services().Get(0).Name(), "mockService")
@@ -423,7 +457,7 @@ func TestServer_Serve(t *testing.T) {
 		result := make(chan error, 1)
 		var wg sync.WaitGroup
 		wg.Add(1)
-		go func() { wg.Done(); result <- s.Serve(ctx) }()
+		go func() { wg.Done(); result <- s.Serve() }()
 		wg.Wait()
 
 		req := httptest.NewRequest(http.MethodGet, "/boom", nil)
@@ -441,12 +475,11 @@ func TestServer_Serve(t *testing.T) {
 		ctx := context.Background()
 		m := &mockService{}
 		s, err := server.New(
-			context.Background(),
 			server.WithAddr(":2424"),
 			server.WithTLSCert("./test/insecure_cert.pem", "./test/insecure_key.pem"),
 		)
 		assert.Nil(t, err)
-		s.Register(ctx, m)
+		s.Register(m)
 
 		require.Equal(t, s.Services().Len(), 1)
 		assert.Equal(t, s.Services().Get(0).Name(), "mockService")
@@ -454,7 +487,7 @@ func TestServer_Serve(t *testing.T) {
 		result := make(chan error, 1)
 		var wg sync.WaitGroup
 		wg.Add(1)
-		go func() { wg.Done(); result <- s.Serve(ctx) }()
+		go func() { wg.Done(); result <- s.Serve() }()
 		wg.Wait()
 
 		s.Shutdown(ctx)
@@ -466,7 +499,7 @@ func TestServer_Serve(t *testing.T) {
 }
 
 func TestServer_Name(t *testing.T) {
-	s, err := server.New(context.Background())
+	s, err := server.New()
 	assert.Nil(t, err)
 	assert.Equal(t, s.Name(), "http server")
 }
