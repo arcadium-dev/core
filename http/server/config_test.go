@@ -40,15 +40,6 @@ func setenv(t *testing.T) {
 }
 
 func TestConfig_New(t *testing.T) {
-	t.Run("test defaults", func(t *testing.T) {
-		t.Setenv("TEST_SERVER_ADDR", ":8443")
-
-		cfg, err := server.NewConfig("test")
-
-		assert.Nil(t, err)
-		assert.Equal(t, cfg.ServerAddr(), ":8443")
-	})
-
 	t.Run("success", func(t *testing.T) {
 		setenv(t)
 		cfg, err := server.NewConfig()

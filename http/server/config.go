@@ -79,19 +79,19 @@ func NewConfig(prefix ...string) (Config, error) {
 
 	origins := strings.TrimSpace(cfg.AllowedOrigins)
 	if len(origins) > 0 {
-		for _, o := range strings.Split(origins, ",") {
+		for o := range strings.SplitSeq(origins, ",") {
 			c.allowedOrigins = append(c.allowedOrigins, strings.TrimSpace(o))
 		}
 	}
 	methods := strings.TrimSpace(cfg.AllowedMethods)
 	if len(methods) > 0 {
-		for _, m := range strings.Split(methods, ",") {
+		for m := range strings.SplitSeq(methods, ",") {
 			c.allowedMethods = append(c.allowedMethods, strings.TrimSpace(m))
 		}
 	}
 	headers := strings.TrimSpace(cfg.AllowedHeaders)
 	if len(headers) > 0 {
-		for _, h := range strings.Split(headers, ",") {
+		for h := range strings.SplitSeq(headers, ",") {
 			c.allowedHeaders = append(c.allowedHeaders, strings.TrimSpace(h))
 		}
 	}
