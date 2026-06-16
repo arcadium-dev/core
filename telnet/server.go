@@ -17,7 +17,9 @@ package telnet
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
+	"runtime/debug"
 	"sync"
 
 	"github.com/globalcyberalliance/telnet-go"
@@ -104,6 +106,8 @@ func NewServer(opts ...ServerOption) *Server {
 		Handler:     s.handle,
 		ConnContext: s.connContext,
 	}
+	// It's not really optional.
+	s.server.SetLogger(slog.New(slog.DiscardHandler))
 
 	s.logger.Info().Str("address", s.addr).Msg("telnet server created")
 
@@ -137,6 +141,13 @@ func (s *Server) Serve() error {
 
 	s.serverMutex.Lock()
 	defer s.serverMutex.Unlock()
+
+	defer func() {
+		if r := recover(); r != nil {
+			s.logger.Info().Msg("stacktrace from panic: \n" + string(debug.Stack()))
+		}
+	}()
+
 	return s.server.Serve(listener)
 }
 
@@ -158,7 +169,9 @@ func (s *Server) Shutdown(ctx context.Context) {
 	s.serverMutex.Lock()
 	defer s.serverMutex.Unlock()
 	if err := s.server.Shutdown(); err != nil {
-		s.logger.Err(err).Msg("failed to shutdown telnet server")
+		if !errors.Is(err, net.ErrClosed) {
+			s.logger.Err(err).Msg("failed to shutdown telnet server")
+		}
 	}
 
 	s.logger.Info().Msg("telnet server shutdown")
