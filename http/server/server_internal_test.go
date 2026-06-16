@@ -7,9 +7,11 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	"github.com/rs/zerolog"
 )
 
 func (s Server) Addr() string                   { return s.addr }
+func (s Server) Logger() *zerolog.Logger        { return s.logger }
 func (s Server) TLSConfig() *tls.Config         { return s.server.TLSConfig }
 func (s Server) CORSOptions() *cors.Options     { return s.corsOptions }
 func (s Server) ReadTimeout() time.Duration     { return s.server.ReadTimeout }

@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/rs/cors"
+	"github.com/rs/zerolog"
 )
 
 type (
@@ -32,6 +33,12 @@ type (
 func WithAddr(addr string) Option {
 	return newOption(func(s *Server) {
 		s.addr = addr
+	})
+}
+
+func WithLogger(logger *zerolog.Logger) Option {
+	return newOption(func(s *Server) {
+		s.logger = logger
 	})
 }
 
