@@ -41,7 +41,7 @@ func TestNewServer(t *testing.T) {
 		{
 			name: "test WithServerAddress option",
 			opts: []telnet.ServerOption{
-				telnet.WithServerAddress(":2323"),
+				telnet.WithServerAddr(":2323"),
 			},
 			verify: func(t *testing.T, s *telnet.Server) {
 				require.NotNil(t, s)
@@ -105,7 +105,7 @@ func TestServe(t *testing.T) {
 		{
 			name: "listen failure",
 			opts: []telnet.ServerOption{
-				telnet.WithServerAddress(":-42"),
+				telnet.WithServerAddr(":-42"),
 			},
 			ctx: func() (context.Context, context.CancelFunc) {
 				return context.Background(), nil
@@ -118,7 +118,7 @@ func TestServe(t *testing.T) {
 		{
 			name: "cancelled context",
 			opts: []telnet.ServerOption{
-				telnet.WithServerAddress(":12323"),
+				telnet.WithServerAddr(":12323"),
 			},
 			ctx: func() (context.Context, context.CancelFunc) {
 				return context.WithTimeout(context.Background(), 50*time.Millisecond)

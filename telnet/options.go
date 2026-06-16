@@ -25,8 +25,8 @@ type (
 	}
 )
 
-// WithServerAddress will configure the server with the listen address.
-func WithServerAddress(addr string) ServerOption {
+// WithServerAddr will configure the server with the listen address.
+func WithServerAddr(addr string) ServerOption {
 	return newServerOption(func(s *Server) {
 		s.addr = addr
 	})
