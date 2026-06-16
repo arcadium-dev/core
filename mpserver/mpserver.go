@@ -16,6 +16,7 @@ package mpserver // import "arcadium.dev/core/mpserver"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -157,8 +158,9 @@ func (s MultiprotocolServer) Serve() error {
 	select {
 	// Wait for an interrupt.
 	case <-s.ctx.Done():
-		if s.ctx.Err() != nil {
-			s.logger.Err(err).Msg("error on interrupt")
+		e := s.ctx.Err()
+		if e != nil && !errors.Is(e, context.Canceled) {
+			err = e
 		}
 
 	// If a protocol server fails to start.
