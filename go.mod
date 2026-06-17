@@ -9,7 +9,7 @@ tool (
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/globalcyberalliance/telnet-go v0.0.0-20250807185007-4f349961b7ed
+	github.com/globalcyberalliance/telnet-go v0.1.0
 	github.com/google/go-cmp v0.7.0
 	github.com/gorilla/mux v1.8.1
 	github.com/kelseyhightower/envconfig v1.4.0
