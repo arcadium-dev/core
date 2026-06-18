@@ -47,8 +47,8 @@ type (
 
 func (s SessionMiddleware) Session(next Handler) Handler {
 	return HandlerFunc(func(session *Session) {
-		s.Logger.Debug().Msg("session start")
-		defer s.Logger.Debug().Msg("session complete")
+		s.Logger.Debug().Str("remote addr", session.RemoteAddr().String()).Msg("session start")
+		defer s.Logger.Debug().Str("remote addr", session.RemoteAddr().String()).Msg("session complete")
 		next.ServeTELNET(session)
 	})
 }
